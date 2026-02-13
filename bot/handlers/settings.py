@@ -4,13 +4,14 @@ from aiogram.types import Message
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from core.embeddings import EmbeddingService
 from core.models import User
 
 router = Router()
 
 
 @router.message(Command("interests"))
-async def cmd_interests(message: Message, session: AsyncSession):
+async def cmd_interests(message: Message, session: AsyncSession, embedding_service: EmbeddingService):
     text = message.text.replace("/interests", "").strip()
     if not text:
         await message.answer(
@@ -26,6 +27,8 @@ async def cmd_interests(message: Message, session: AsyncSession):
         return
 
     user.interests = text
+    result = await embedding_service.embed_text(text)
+    user.interests_embedding = result.embeddings[0]
     await session.commit()
     await message.answer(f"Интересы обновлены: {text}")
 

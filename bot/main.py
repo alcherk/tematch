@@ -49,6 +49,7 @@ async def main():
         async with session_factory() as session:
             data["session"] = session
             data["recommender"] = recommender
+            data["embedding_service"] = embedding_service
             return await handler(event, data)
 
     dp.include_router(start.router)

@@ -80,6 +80,7 @@ async def cmd_digest(
         interests=user.interests,
         channel_ids=list(channel_ids),
         window_start=window,
+        interests_embedding=user.interests_embedding,
     )
 
     if not ranked:

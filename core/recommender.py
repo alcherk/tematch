@@ -52,10 +52,14 @@ class Recommender:
         interests: str,
         channel_ids: list[int],
         window_start: Optional[datetime] = None,
+        interests_embedding: Optional[list[float]] = None,
     ) -> list[dict]:
         # Stage 1: pgvector similarity search
-        embed_result = await self.embedding_service.embed_text(interests)
-        query_vector = embed_result.embeddings[0]
+        if interests_embedding:
+            query_vector = interests_embedding
+        else:
+            embed_result = await self.embedding_service.embed_text(interests)
+            query_vector = embed_result.embeddings[0]
 
         stmt = (
             select(Message)
