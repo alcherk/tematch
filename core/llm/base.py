@@ -1,12 +1,22 @@
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
+
+
+@dataclass
+class LLMResult:
+    ranked: list[dict]
+    tokens_in: int
+    tokens_out: int
 
 
 class LLMProvider(ABC):
     @abstractmethod
     async def rank_messages(
         self, messages: list[dict], user_interests: str, limit: int
-    ) -> list[dict]:
-        """Rank messages by relevance. Returns [{"message_id": ..., "score": ...}]."""
+    ) -> LLMResult:
+        """Rank messages by relevance. Returns LLMResult."""
         ...
 
 

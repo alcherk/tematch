@@ -2,7 +2,7 @@ import json
 
 from openai import AsyncOpenAI
 
-from core.llm.base import LLMProvider
+from core.llm.base import LLMProvider, LLMResult
 
 RANK_PROMPT = """You are a content recommendation engine.
 Given a user's interests and a list of messages, rank the messages by relevance.
@@ -24,7 +24,7 @@ class OpenAIProvider(LLMProvider):
 
     async def rank_messages(
         self, messages: list[dict], user_interests: str, limit: int
-    ) -> list[dict]:
+    ) -> LLMResult:
         msg_text = "\n".join(f"[ID={m['id']}] {m['text'][:300]}" for m in messages)
         prompt = RANK_PROMPT.format(
             interests=user_interests, messages=msg_text, limit=limit
@@ -34,4 +34,9 @@ class OpenAIProvider(LLMProvider):
             messages=[{"role": "user", "content": prompt}],
             temperature=0,
         )
-        return json.loads(response.choices[0].message.content)
+        usage = response.usage
+        return LLMResult(
+            ranked=json.loads(response.choices[0].message.content),
+            tokens_in=usage.prompt_tokens if usage else 0,
+            tokens_out=usage.completion_tokens if usage else 0,
+        )

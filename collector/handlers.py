@@ -40,7 +40,8 @@ async def handle_new_message(
 
     # Generate embedding
     try:
-        embedding = await embedding_service.embed_text(text)
+        embed_result = await embedding_service.embed_text(text)
+        embedding = embed_result.embeddings[0]
     except Exception:
         logger.exception("Embedding failed for message %s", message_id)
         embedding = None

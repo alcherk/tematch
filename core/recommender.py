@@ -54,7 +54,8 @@ class Recommender:
         window_start: Optional[datetime] = None,
     ) -> list[dict]:
         # Stage 1: pgvector similarity search
-        query_vector = await self.embedding_service.embed_text(interests)
+        embed_result = await self.embedding_service.embed_text(interests)
+        query_vector = embed_result.embeddings[0]
 
         stmt = (
             select(Message)
@@ -75,10 +76,10 @@ class Recommender:
 
         # Stage 2: LLM ranking
         messages_for_llm = [{"id": m.id, "text": m.text} for m in candidates]
-        ranked = await self.llm_provider.rank_messages(
+        llm_result = await self.llm_provider.rank_messages(
             messages=messages_for_llm,
             user_interests=interests,
             limit=self.digest_size,
         )
 
-        return ranked
+        return llm_result.ranked

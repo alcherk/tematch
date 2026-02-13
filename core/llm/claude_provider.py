@@ -2,7 +2,7 @@ import json
 
 from anthropic import AsyncAnthropic
 
-from core.llm.base import LLMProvider
+from core.llm.base import LLMProvider, LLMResult
 from core.llm.openai_provider import RANK_PROMPT
 
 
@@ -13,7 +13,7 @@ class ClaudeProvider(LLMProvider):
 
     async def rank_messages(
         self, messages: list[dict], user_interests: str, limit: int
-    ) -> list[dict]:
+    ) -> LLMResult:
         msg_text = "\n".join(f"[ID={m['id']}] {m['text'][:300]}" for m in messages)
         prompt = RANK_PROMPT.format(
             interests=user_interests, messages=msg_text, limit=limit
@@ -23,4 +23,8 @@ class ClaudeProvider(LLMProvider):
             max_tokens=1024,
             messages=[{"role": "user", "content": prompt}],
         )
-        return json.loads(response.content[0].text)
+        return LLMResult(
+            ranked=json.loads(response.content[0].text),
+            tokens_in=response.usage.input_tokens,
+            tokens_out=response.usage.output_tokens,
+        )
