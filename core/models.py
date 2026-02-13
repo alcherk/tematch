@@ -28,7 +28,7 @@ class User(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     telegram_id: Mapped[int] = mapped_column(BigInteger, unique=True, nullable=False)
     interests: Mapped[Optional[str]] = mapped_column(Text)
-    digest_cron: Mapped[str] = mapped_column(String(50), default="0 9 * * *")
+    digest_cron: Mapped[Optional[str]] = mapped_column(String(50), default="0 9 * * *")
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
     last_digest_at: Mapped[Optional[datetime]] = mapped_column()
     interests_embedding = mapped_column(Vector(1536), nullable=True)
