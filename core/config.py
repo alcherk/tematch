@@ -25,4 +25,13 @@ class Settings(BaseSettings):
     # Scheduler
     DEFAULT_DIGEST_CRON: str = "0 9 * * *"
 
+    # Hardening
+    DIGEST_WINDOW_MAX_HOURS: int = 72
+    MAX_DIGESTS_PER_DAY: int = 3
+    DAILY_TOKEN_BUDGET: int = 500_000
+    EMBEDDING_BATCH_SIZE: int = 20
+    EMBEDDING_FLUSH_INTERVAL: int = 30
+    RESYNC_MAX_HOURS: int = 72
+    RESYNC_BATCH_SIZE: int = 100
+
     model_config = {"env_file": ".env", "extra": "ignore"}

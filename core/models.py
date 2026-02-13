@@ -1,6 +1,7 @@
 # core/models.py
 from __future__ import annotations
 
+import datetime as dt
 from datetime import datetime
 from typing import Optional
 
@@ -29,6 +30,8 @@ class User(Base):
     interests: Mapped[Optional[str]] = mapped_column(Text)
     digest_cron: Mapped[str] = mapped_column(String(50), default="0 9 * * *")
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+    last_digest_at: Mapped[Optional[datetime]] = mapped_column()
+    interests_embedding = mapped_column(Vector(1536), nullable=True)
 
     channels = relationship("UserChannel", back_populates="user")
     recommendations = relationship("Recommendation", back_populates="user")
@@ -74,6 +77,7 @@ class Message(Base):
     channel_id: Mapped[int] = mapped_column(ForeignKey("channels.id"))
     telegram_msg_id: Mapped[int] = mapped_column(nullable=False)
     text: Mapped[str] = mapped_column(Text, nullable=False)
+    content_hash: Mapped[Optional[str]] = mapped_column(String(64), index=True)
     date: Mapped[Optional[datetime]] = mapped_column()
     embedding = mapped_column(Vector(1536), nullable=True)
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
@@ -99,3 +103,15 @@ class Recommendation(Base):
     def __init__(self, **kwargs):
         kwargs.setdefault("delivered", False)
         super().__init__(**kwargs)
+
+
+class LLMUsage(Base):
+    __tablename__ = "llm_usage"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    date: Mapped[dt.date] = mapped_column(index=True, nullable=False)
+    provider: Mapped[str] = mapped_column(String(20), nullable=False)
+    operation: Mapped[str] = mapped_column(String(50), nullable=False)
+    tokens_in: Mapped[int] = mapped_column(nullable=False)
+    tokens_out: Mapped[int] = mapped_column(nullable=False)
+    cost_estimate: Mapped[float] = mapped_column(Float, default=0.0)
