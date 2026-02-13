@@ -4,7 +4,7 @@ from aiogram import F, Router
 from aiogram.filters import Command
 from aiogram.types import CallbackQuery
 from aiogram.types import Message as TgMessage
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.keyboards import feedback_keyboard
@@ -13,6 +13,19 @@ from core.models import Recommendation, User, UserChannel
 from core.recommender import Recommender, compute_window_start
 
 router = Router()
+
+
+async def count_digests_today(session: AsyncSession, user_id: int) -> int:
+    today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+    stmt = select(func.count(func.distinct(
+        func.date_trunc("minute", Recommendation.created_at)
+    ))).where(
+        Recommendation.user_id == user_id,
+        Recommendation.delivered.is_(True),
+        Recommendation.created_at >= today_start,
+    )
+    result = await session.execute(stmt)
+    return result.scalar_one_or_none() or 0
 
 
 @router.message(Command("digest"))
@@ -36,6 +49,22 @@ async def cmd_digest(
         await message.answer(
             "Добавь каналы: перешли сообщение из канала или отправь @channel_name"
         )
+        return
+
+    # Rate limit: per-user digest cap
+    digest_count = await count_digests_today(session, user.id)
+    if digest_count >= 3:
+        await message.answer(
+            f"Лимит дайджестов на сегодня: {digest_count}/3. Попробуй завтра."
+        )
+        return
+
+    # Rate limit: global token budget
+    from core.llm_usage import get_daily_token_total
+
+    daily_tokens = await get_daily_token_total(session)
+    if daily_tokens >= 500_000:
+        await message.answer("Дневной лимит токенов исчерпан. Попробуй завтра.")
         return
 
     await message.answer("Подбираю рекомендации...")
