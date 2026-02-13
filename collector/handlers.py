@@ -5,7 +5,6 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.content_hash import compute_content_hash
-from core.embeddings import EmbeddingService
 from core.models import Channel, Message
 
 logger = logging.getLogger(__name__)
@@ -13,11 +12,11 @@ logger = logging.getLogger(__name__)
 
 async def handle_new_message(
     session: AsyncSession,
-    embedding_service: EmbeddingService,
     channel_telegram_id: int,
     message_id: int,
     text: str,
     date: datetime,
+    embedding_buffer=None,
 ):
     if not text or len(text.strip()) < 20:
         return
@@ -38,14 +37,6 @@ async def handle_new_message(
     if exists:
         return
 
-    # Generate embedding
-    try:
-        embed_result = await embedding_service.embed_text(text)
-        embedding = embed_result.embeddings[0]
-    except Exception:
-        logger.exception("Embedding failed for message %s", message_id)
-        embedding = None
-
     content_hash = compute_content_hash(text)
 
     msg = Message(
@@ -53,11 +44,15 @@ async def handle_new_message(
         telegram_msg_id=message_id,
         text=text,
         date=date,
-        embedding=embedding,
         content_hash=content_hash,
     )
     session.add(msg)
     await session.commit()
+    await session.refresh(msg)
+
+    # Add to embedding buffer for batched processing
+    if embedding_buffer is not None:
+        embedding_buffer.add(message_id=msg.id, text=text)
 
     channel.last_fetched_at = datetime.utcnow()
     await session.commit()
