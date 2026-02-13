@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from aiogram import F, Router
 from aiogram.filters import Command
 from aiogram.types import CallbackQuery
@@ -8,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from bot.keyboards import feedback_keyboard
 from core.models import Message as MsgModel
 from core.models import Recommendation, User, UserChannel
-from core.recommender import Recommender
+from core.recommender import Recommender, compute_window_start
 
 router = Router()
 
@@ -38,11 +40,17 @@ async def cmd_digest(
 
     await message.answer("Подбираю рекомендации...")
 
+    window = compute_window_start(
+        last_digest_at=user.last_digest_at,
+        max_hours=72,
+    )
+
     ranked = await recommender.recommend(
         session=session,
         user_id=user.id,
         interests=user.interests,
         channel_ids=list(channel_ids),
+        window_start=window,
     )
 
     if not ranked:
@@ -66,6 +74,9 @@ async def cmd_digest(
 
         text = f"📌 *Рекомендация* (score: {item['score']:.2f})\n\n{msg.text[:4000]}"
         await message.answer(text, reply_markup=feedback_keyboard(rec.id))
+
+    user.last_digest_at = datetime.utcnow()
+    await session.commit()
 
 
 @router.callback_query(F.data.startswith("fb:"))

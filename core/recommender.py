@@ -1,3 +1,6 @@
+from datetime import datetime, timedelta
+from typing import Optional
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -15,6 +18,18 @@ def deduplicate_candidates(candidates: list) -> list:
         elif h not in seen or msg.date < seen[h].date:
             seen[h] = msg
     return list(seen.values())
+
+
+def compute_window_start(
+    last_digest_at: Optional[datetime],
+    max_hours: int,
+    now: Optional[datetime] = None,
+) -> datetime:
+    if now is None:
+        now = datetime.utcnow()
+    if last_digest_at is None:
+        return now - timedelta(hours=24)
+    return max(last_digest_at, now - timedelta(hours=max_hours))
 
 
 class Recommender:
@@ -36,6 +51,7 @@ class Recommender:
         user_id: int,
         interests: str,
         channel_ids: list[int],
+        window_start: Optional[datetime] = None,
     ) -> list[dict]:
         # Stage 1: pgvector similarity search
         query_vector = await self.embedding_service.embed_text(interests)
@@ -44,9 +60,12 @@ class Recommender:
             select(Message)
             .where(Message.channel_id.in_(channel_ids))
             .where(Message.embedding.isnot(None))
-            .order_by(Message.embedding.cosine_distance(query_vector))
-            .limit(self.candidates_limit)
         )
+        if window_start:
+            stmt = stmt.where(Message.date >= window_start)
+        stmt = stmt.order_by(
+            Message.embedding.cosine_distance(query_vector)
+        ).limit(self.candidates_limit)
         result = await session.execute(stmt)
         candidates = result.scalars().all()
         candidates = deduplicate_candidates(candidates)
