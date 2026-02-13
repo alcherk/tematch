@@ -6,6 +6,17 @@ from core.llm.base import LLMProvider
 from core.models import Message
 
 
+def deduplicate_candidates(candidates: list) -> list:
+    seen: dict[str, object] = {}
+    for msg in candidates:
+        h = msg.content_hash
+        if h is None:
+            seen[f"_nohash_{msg.id}"] = msg
+        elif h not in seen or msg.date < seen[h].date:
+            seen[h] = msg
+    return list(seen.values())
+
+
 class Recommender:
     def __init__(
         self,
@@ -38,6 +49,7 @@ class Recommender:
         )
         result = await session.execute(stmt)
         candidates = result.scalars().all()
+        candidates = deduplicate_candidates(candidates)
 
         if not candidates:
             return []

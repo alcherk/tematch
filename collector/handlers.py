@@ -4,6 +4,7 @@ from datetime import datetime
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from core.content_hash import compute_content_hash
 from core.embeddings import EmbeddingService
 from core.models import Channel, Message
 
@@ -44,12 +45,15 @@ async def handle_new_message(
         logger.exception("Embedding failed for message %s", message_id)
         embedding = None
 
+    content_hash = compute_content_hash(text)
+
     msg = Message(
         channel_id=channel.id,
         telegram_msg_id=message_id,
         text=text,
         date=date,
         embedding=embedding,
+        content_hash=content_hash,
     )
     session.add(msg)
     await session.commit()
