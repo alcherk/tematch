@@ -1,6 +1,7 @@
 # tests/test_config.py
-import os
 import pytest
+from pydantic import ValidationError
+
 from core.config import Settings
 
 
@@ -19,5 +20,5 @@ def test_settings_loads_defaults():
 
 
 def test_settings_requires_telegram_fields():
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         Settings(DATABASE_URL="postgresql+asyncpg://localhost/test")
