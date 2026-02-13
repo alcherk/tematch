@@ -1,0 +1,37 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: tematch
+      POSTGRES_USER: tematch
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-tematch}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tematch"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  collector:
+    build: .
+    command: python -m collector.main
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file: .env
+    volumes:
+      - ./sessions:/app/sessions
+
+  bot:
+    build: .
+    command: python -m bot.main
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file: .env
+
+volumes:
+  pgdata:
