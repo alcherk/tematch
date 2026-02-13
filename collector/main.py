@@ -6,6 +6,7 @@ from telethon import TelegramClient, events
 from collector.channel_manager import get_active_channel_ids
 from collector.embedding_buffer import EmbeddingBuffer
 from collector.handlers import handle_new_message
+from collector.resync import resync_channels
 from core.config import Settings
 from core.db import create_engine, create_session_factory
 from core.embeddings import EmbeddingService
@@ -70,6 +71,18 @@ async def main():
             await embedding_buffer.flush()
 
     await client.start()
+
+    # Catch up on missed messages
+    logger.info("Starting resync...")
+    await resync_channels(
+        client=client,
+        session_factory=session_factory,
+        embedding_buffer=embedding_buffer,
+        max_hours=settings.RESYNC_MAX_HOURS,
+        batch_size=settings.RESYNC_BATCH_SIZE,
+    )
+    logger.info("Resync complete. Listening for live messages...")
+
     task = asyncio.create_task(periodic_flush())
     _background_tasks.add(task)
     task.add_done_callback(_background_tasks.discard)
