@@ -75,6 +75,7 @@ async def channel_messages(
             select(
                 Message.id,
                 Message.text,
+                Message.text_html,
                 Message.date,
                 Message.has_media,
                 (Message.embedding.isnot(None)).label("has_embedding"),
@@ -92,6 +93,7 @@ async def channel_messages(
             select(
                 Message.id,
                 Message.text,
+                Message.text_html,
                 Message.date,
                 Message.has_media,
                 (Message.embedding.isnot(None)).label("has_embedding"),
@@ -114,6 +116,7 @@ async def channel_messages(
             {
                 "id": r.id,
                 "text": r.text or "",
+                "text_html": r.text_html if r.text_html else None,
                 "date": r.date.isoformat() if r.date else None,
                 "has_embedding": r.has_embedding,
                 "relevance": round(r.relevance, 3)

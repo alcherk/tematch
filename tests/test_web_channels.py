@@ -121,3 +121,47 @@ async def test_channel_messages_returns_shape(mock_session):
     assert "page" in data
     assert data["page"] == 1
     assert "per_page" in data
+
+
+@pytest.mark.asyncio
+async def test_channel_messages_includes_text_html(mock_session):
+    """Response should include text_html field."""
+    sub_result = MagicMock()
+    sub_mock = MagicMock()
+    sub_mock.user_id = 1
+    sub_mock.channel_id = 5
+    sub_result.scalar_one_or_none.return_value = sub_mock
+
+    ch_result = MagicMock()
+    ch_mock = MagicMock()
+    ch_mock.id = 5
+    ch_mock.title = "Test Channel"
+    ch_mock.username = "testchan"
+    ch_result.scalar_one_or_none.return_value = ch_mock
+
+    count_result = MagicMock()
+    count_result.scalar_one.return_value = 1
+
+    msg_row = MagicMock()
+    msg_row.id = 10
+    msg_row.text = "Hello bold"
+    msg_row.text_html = "Hello <strong>bold</strong>"
+    msg_row.date = None
+    msg_row.has_embedding = True
+    msg_row.has_media = False
+    msgs_result = MagicMock()
+    msgs_result.all.return_value = [msg_row]
+
+    mock_session.execute.side_effect = [sub_result, ch_result, count_result, msgs_result]
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(
+        transport=transport, base_url="http://test", cookies=_user_cookie()
+    ) as client:
+        resp = await client.get("/api/users/me/channels/5/messages")
+
+    assert resp.status_code == 200
+    data = resp.json()
+    msg = data["messages"][0]
+    assert "text_html" in msg
+    assert msg["text_html"] == "Hello <strong>bold</strong>"
