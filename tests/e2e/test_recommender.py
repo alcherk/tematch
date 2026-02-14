@@ -1,7 +1,7 @@
 """E2E tests for recommender pipeline: embedding cache, dedup integration, LLM ranking."""
 
 from datetime import datetime
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -11,7 +11,8 @@ from core.recommender import Recommender, deduplicate_candidates
 
 
 @pytest.mark.asyncio
-async def test_cached_embedding_skips_api_call():
+@patch("core.recommender.log_usage", new_callable=AsyncMock)
+async def test_cached_embedding_skips_api_call(_mock_log):
     """Feature 15: passing interests_embedding bypasses embed_text call."""
     mock_session = AsyncMock()
     mock_embed = AsyncMock()
@@ -38,7 +39,8 @@ async def test_cached_embedding_skips_api_call():
 
 
 @pytest.mark.asyncio
-async def test_no_cached_embedding_calls_api():
+@patch("core.recommender.log_usage", new_callable=AsyncMock)
+async def test_no_cached_embedding_calls_api(_mock_log):
     """Feature 15: without cached embedding, embed_text is called."""
     mock_session = AsyncMock()
     mock_embed = AsyncMock()

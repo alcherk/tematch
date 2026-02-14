@@ -1,4 +1,4 @@
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -6,7 +6,8 @@ from collector.embedding_buffer import EmbeddingBuffer
 
 
 @pytest.mark.asyncio
-async def test_buffer_accumulates_and_flushes():
+@patch("collector.embedding_buffer.log_usage", new_callable=AsyncMock)
+async def test_buffer_accumulates_and_flushes(_mock_log):
     mock_session = AsyncMock()
     mock_ctx = MagicMock()
     mock_ctx.__aenter__ = AsyncMock(return_value=mock_session)

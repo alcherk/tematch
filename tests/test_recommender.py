@@ -1,4 +1,4 @@
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -8,7 +8,8 @@ from core.recommender import Recommender
 
 
 @pytest.mark.asyncio
-async def test_recommend_calls_embedding_then_llm():
+@patch("core.recommender.log_usage", new_callable=AsyncMock)
+async def test_recommend_calls_embedding_then_llm(_mock_log):
     mock_session = AsyncMock()
     mock_embedding = AsyncMock()
     mock_embedding.embed_text.return_value = EmbeddingResult(

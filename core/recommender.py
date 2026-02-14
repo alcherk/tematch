@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.embeddings import EmbeddingService
 from core.llm.base import LLMProvider
+from core.llm_usage import log_usage
 from core.models import Message
 
 
@@ -39,11 +40,13 @@ class Recommender:
         llm_provider: LLMProvider,
         candidates_limit: int = 50,
         digest_size: int = 5,
+        provider_name: str = "openai",
     ):
         self.embedding_service = embedding_service
         self.llm_provider = llm_provider
         self.candidates_limit = candidates_limit
         self.digest_size = digest_size
+        self.provider_name = provider_name
 
     async def recommend(
         self,
@@ -60,6 +63,13 @@ class Recommender:
         else:
             embed_result = await self.embedding_service.embed_text(interests)
             query_vector = embed_result.embeddings[0]
+            await log_usage(
+                session,
+                provider="openai",
+                operation="embedding",
+                tokens_in=embed_result.tokens,
+                tokens_out=0,
+            )
 
         stmt = (
             select(Message)
@@ -84,6 +94,14 @@ class Recommender:
             messages=messages_for_llm,
             user_interests=interests,
             limit=self.digest_size,
+        )
+
+        await log_usage(
+            session,
+            provider=self.provider_name,
+            operation="rank_messages",
+            tokens_in=llm_result.tokens_in,
+            tokens_out=llm_result.tokens_out,
         )
 
         return llm_result.ranked

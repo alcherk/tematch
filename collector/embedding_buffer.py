@@ -6,6 +6,7 @@ from sqlalchemy import update
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from core.embeddings import EmbeddingService
+from core.llm_usage import log_usage
 from core.models import Message
 
 logger = logging.getLogger(__name__)
@@ -55,6 +56,12 @@ class EmbeddingBuffer:
                     .values(embedding=embedding)
                 )
                 await session.execute(stmt)
-            await session.commit()
+            await log_usage(
+                session,
+                provider="openai",
+                operation="embedding",
+                tokens_in=result.tokens,
+                tokens_out=0,
+            )
 
         logger.info("Flushed %d embeddings", len(batch))

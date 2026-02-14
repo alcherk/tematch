@@ -40,6 +40,7 @@ async def main():
         llm_provider=llm_provider,
         candidates_limit=app_settings.CANDIDATES_LIMIT,
         digest_size=app_settings.DIGEST_SIZE,
+        provider_name=app_settings.LLM_PROVIDER,
     )
 
     bot = Bot(token=app_settings.TG_BOT_TOKEN)

@@ -1,4 +1,4 @@
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -7,7 +7,8 @@ from core.recommender import Recommender
 
 
 @pytest.mark.asyncio
-async def test_recommend_uses_cached_interests_embedding():
+@patch("core.recommender.log_usage", new_callable=AsyncMock)
+async def test_recommend_uses_cached_interests_embedding(_mock_log):
     mock_session = AsyncMock()
     mock_embedding = AsyncMock()
     mock_llm = AsyncMock()
