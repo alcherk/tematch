@@ -1,3 +1,4 @@
+import re
 from typing import Optional
 
 from aiogram import F, Router
@@ -8,6 +9,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from core.models import Channel, User, UserChannel
 
 router = Router()
+
+_PRIVATE_LINK_RE = re.compile(r"t\.me/c/(\d+)(?:/\d+)?")
+_PUBLIC_LINK_RE = re.compile(r"t\.me/([A-Za-z_]\w{3,})(?:/\d+)?")
 
 
 @router.message(F.forward_from_chat)
@@ -23,6 +27,42 @@ async def handle_forwarded(message: Message, session: AsyncSession):
     )
     await _link_user_channel(session, user.id, channel.id)
     await message.answer(f"Канал «{chat.title}» добавлен!")
+
+
+@router.message(F.text.regexp(_PRIVATE_LINK_RE))
+async def handle_private_link(message: Message, session: AsyncSession):
+    match = _PRIVATE_LINK_RE.search(message.text)
+    if not match:
+        return
+    bare_id = int(match.group(1))
+    telegram_id = int(f"-100{bare_id}")
+
+    user = await _get_or_create_user(session, message.from_user.id)
+    channel = await _get_or_create_channel(
+        session, telegram_id=telegram_id, username=None, title=f"channel_{bare_id}"
+    )
+    await _link_user_channel(session, user.id, channel.id)
+    await message.answer(
+        f"Канал добавлен (ID: {bare_id}). "
+        "Collector обновит название при следующем сборе."
+    )
+
+
+@router.message(F.text.regexp(_PUBLIC_LINK_RE))
+async def handle_public_link(message: Message, session: AsyncSession):
+    match = _PUBLIC_LINK_RE.search(message.text)
+    if not match:
+        return
+    username = match.group(1)
+
+    user = await _get_or_create_user(session, message.from_user.id)
+    channel = await _get_or_create_channel(
+        session, telegram_id=None, username=username, title=username
+    )
+    await _link_user_channel(session, user.id, channel.id)
+    await message.answer(
+        f"Канал @{username} добавлен! Collector начнёт сбор при следующем цикле."
+    )
 
 
 @router.message(F.text.startswith("@"))
