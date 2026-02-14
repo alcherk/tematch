@@ -23,6 +23,14 @@ venv/
 *.swp
 *.swo
 
+# Telethon sessions
+*.session
+*.session-journal
+
+# Pytest / Ruff
+.pytest_cache/
+.ruff_cache/
+
 # OS
 .DS_Store
 Thumbs.db
