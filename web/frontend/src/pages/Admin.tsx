@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { apiFetch, voteFeedback } from '../api';
 import CostChart from '../components/CostChart';
 import StatCard from '../components/StatCard';
+import TokenChart from '../components/TokenChart';
 
 export default function Admin() {
   const [stats, setStats] = useState<any>(null);
@@ -38,11 +39,12 @@ export default function Admin() {
       <h2 className="cyber-heading-lg animate-in">Admin Panel</h2>
 
       {/* Overview Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <StatCard label="Users" value={stats.users} />
         <StatCard label="Channels" value={stats.channels} />
         <StatCard label="Messages today" value={stats.messages_today} />
         <StatCard label="Digests today" value={stats.recommendations_today} />
+        <StatCard label="Tokens today" value={stats.tokens_today.toLocaleString()} />
       </div>
 
       {/* Cost Chart */}
@@ -73,9 +75,18 @@ export default function Admin() {
         <CostChart data={costs} />
       </section>
 
+      {/* Token Usage */}
+      <section className="cyber-card animate-in animate-in-3" style={{ padding: '1.75rem' }}>
+        <h3 className="cyber-heading" style={{ marginBottom: '1rem' }}>
+          <span style={{ color: 'var(--cyan)', marginRight: '0.5rem', opacity: 0.5 }}>▸</span>
+          Token Usage
+        </h3>
+        <TokenChart data={costs} />
+      </section>
+
       {/* Token Budget */}
       {health && (
-        <section className="cyber-card animate-in animate-in-3" style={{ padding: '1.75rem' }}>
+        <section className="cyber-card animate-in animate-in-4" style={{ padding: '1.75rem' }}>
           <h3 className="cyber-heading" style={{ marginBottom: '1rem' }}>
             <span style={{ color: 'var(--cyan)', marginRight: '0.5rem', opacity: 0.5 }}>▸</span>
             Token Budget
@@ -107,7 +118,7 @@ export default function Admin() {
 
       {/* System Health */}
       {health && (
-        <section className="cyber-card animate-in animate-in-4" style={{ padding: '1.75rem' }}>
+        <section className="cyber-card animate-in animate-in-5" style={{ padding: '1.75rem' }}>
           <h3 className="cyber-heading" style={{ marginBottom: '1rem' }}>
             <span style={{ color: 'var(--cyan)', marginRight: '0.5rem', opacity: 0.5 }}>▸</span>
             System Health
@@ -143,7 +154,7 @@ export default function Admin() {
       )}
 
       {/* Recommendations */}
-      <section className="cyber-card animate-in animate-in-5" style={{ padding: '1.75rem' }}>
+      <section className="cyber-card animate-in animate-in-6" style={{ padding: '1.75rem' }}>
         <h3 className="cyber-heading" style={{ marginBottom: '1rem' }}>
           <span style={{ color: 'var(--cyan)', marginRight: '0.5rem', opacity: 0.5 }}>▸</span>
           Recommendations
@@ -207,7 +218,7 @@ export default function Admin() {
       </section>
 
       {/* Users Table */}
-      <section className="cyber-card animate-in animate-in-6" style={{ padding: '1.75rem' }}>
+      <section className="cyber-card animate-in animate-in-7" style={{ padding: '1.75rem' }}>
         <h3 className="cyber-heading" style={{ marginBottom: '1rem' }}>
           <span style={{ color: 'var(--cyan)', marginRight: '0.5rem', opacity: 0.5 }}>▸</span>
           Users
