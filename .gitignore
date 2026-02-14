@@ -16,6 +16,7 @@ venv/
 .env
 .env.*
 !.env.example
+!web/frontend/.env
 
 # IDE
 .idea/

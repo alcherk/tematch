@@ -1,35 +1,34 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useEffect, useState } from 'react';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { apiFetch } from './api';
+import Layout from './components/Layout';
+import Login from './pages/Login';
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [user, setUser] = useState<{ telegram_id: number; is_admin: boolean } | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    apiFetch<{ telegram_id: number; is_admin: boolean }>('/api/auth/me')
+      .then(setUser)
+      .catch(() => setUser(null))
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <div className="flex items-center justify-center h-screen">Loading...</div>;
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <BrowserRouter>
+      <Routes>
+        <Route path="/login" element={user ? <Navigate to="/dashboard" /> : <Login />} />
+        <Route element={user ? <Layout isAdmin={user.is_admin} /> : <Navigate to="/login" />}>
+          <Route path="/dashboard" element={<div>Dashboard (next task)</div>} />
+          <Route path="/admin" element={user?.is_admin ? <div>Admin (next task)</div> : <Navigate to="/dashboard" />} />
+        </Route>
+        <Route path="*" element={<Navigate to="/dashboard" />} />
+      </Routes>
+    </BrowserRouter>
+  );
 }
 
-export default App
+export default App;
