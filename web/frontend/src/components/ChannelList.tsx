@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { apiFetch } from '../api';
 
 interface Channel {
@@ -29,7 +30,19 @@ export default function ChannelList({ channels, onRefresh }: { channels: Channel
         {channels.map((ch) => (
           <tr key={ch.id}>
             <td style={{ color: 'var(--text-primary)' }}>
-              {ch.title}
+              <Link
+                to={`/channels/${ch.id}`}
+                style={{
+                  color: 'var(--text-primary)',
+                  textDecoration: 'none',
+                  borderBottom: '1px solid var(--border-dim)',
+                  transition: 'border-color 0.2s'
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.borderBottomColor = 'var(--cyan)')}
+                onMouseLeave={(e) => (e.currentTarget.style.borderBottomColor = 'var(--border-dim)')}
+              >
+                {ch.title}
+              </Link>
               {ch.username && <span className="cyber-mono" style={{ color: 'var(--text-muted)', marginLeft: '0.5rem', fontSize: '0.8rem' }}>@{ch.username}</span>}
             </td>
             <td className="cyber-mono">{ch.message_count}</td>
