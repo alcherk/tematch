@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { apiFetch } from './api';
 import Layout from './components/Layout';
-import Admin from './pages/Admin';
 import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
+
+const Admin = lazy(() => import('./pages/Admin'));
 
 function App() {
   const [user, setUser] = useState<{ telegram_id: number; is_admin: boolean } | null>(null);
@@ -29,7 +30,7 @@ function App() {
         <Route path="/login" element={user ? <Navigate to="/dashboard" /> : <Login />} />
         <Route element={user ? <Layout isAdmin={user.is_admin} /> : <Navigate to="/login" />}>
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/admin" element={user?.is_admin ? <Admin /> : <Navigate to="/dashboard" />} />
+          <Route path="/admin" element={user?.is_admin ? <Suspense fallback={<p className="cyber-mono" style={{ color: 'var(--text-muted)' }}>Loading...</p>}><Admin /></Suspense> : <Navigate to="/dashboard" />} />
         </Route>
         <Route path="*" element={<Navigate to="/dashboard" />} />
       </Routes>
