@@ -79,6 +79,7 @@ class Message(Base):
     text: Mapped[str] = mapped_column(Text, nullable=False)
     reply_to_msg_id: Mapped[Optional[int]] = mapped_column(index=True)
     content_hash: Mapped[Optional[str]] = mapped_column(String(64), index=True)
+    has_media: Mapped[bool] = mapped_column(Boolean, default=False)
     date: Mapped[Optional[datetime]] = mapped_column()
     embedding = mapped_column(Vector(1536), nullable=True)
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)

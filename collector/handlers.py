@@ -18,6 +18,7 @@ async def handle_new_message(
     date: datetime,
     embedding_buffer=None,
     reply_to_msg_id=None,
+    has_media: bool = False,
 ):
     if not text or len(text.strip()) < 20:
         return
@@ -50,6 +51,7 @@ async def handle_new_message(
         date=naive_date,
         content_hash=content_hash,
         reply_to_msg_id=reply_to_msg_id,
+        has_media=has_media,
     )
     session.add(msg)
     await session.commit()

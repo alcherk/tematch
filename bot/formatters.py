@@ -52,10 +52,12 @@ def _format_single_item(item: DigestItem) -> str:
     header = f"<b>{item.index}.</b> {html_escape(item.channel.title or '')} (score: {item.score:.2f})"
     parts.append(header)
 
-    # Link
+    # Link (with image indicator when media is present)
     link = generate_message_link(item.channel, item.msg.telegram_msg_id)
     if link:
-        parts.append(f'<a href="{link}">🔗 Источник</a>')
+        has_media = getattr(item.msg, "has_media", False)
+        icon = "🔗🖼" if has_media else "🔗"
+        parts.append(f'<a href="{link}">{icon} Источник</a>')
 
     # Thread parents (context before)
     if item.thread and item.thread.get("parents"):

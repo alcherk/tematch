@@ -246,8 +246,10 @@ def _make_digest_item(
     telegram_msg_id=10,
     title="Test Channel",
     thread=None,
+    has_media=False,
 ):
     msg = _make_msg(text=text, telegram_msg_id=telegram_msg_id)
+    msg.has_media = has_media
     ch = _make_channel(username=username, telegram_id=telegram_id)
     ch.title = title
     return DigestItem(
@@ -281,6 +283,19 @@ def test_format_digest_page_with_link():
     items = [_make_digest_item(username="mychan", telegram_msg_id=42)]
     result = format_digest_page(items)
     assert '<a href="https://t.me/mychan/42">' in result
+
+
+def test_format_digest_page_media_indicator():
+    items = [_make_digest_item(username="mychan", has_media=True)]
+    result = format_digest_page(items)
+    assert "🔗🖼" in result
+
+
+def test_format_digest_page_no_media_indicator():
+    items = [_make_digest_item(username="mychan", has_media=False)]
+    result = format_digest_page(items)
+    assert "🖼" not in result
+    assert "🔗 Источник" in result
 
 
 def test_format_digest_page_no_link():
