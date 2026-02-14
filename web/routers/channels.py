@@ -113,7 +113,7 @@ async def channel_messages(
         "messages": [
             {
                 "id": r.id,
-                "text": r.text[:200] if r.text else "",
+                "text": r.text or "",
                 "date": r.date.isoformat() if r.date else None,
                 "has_embedding": r.has_embedding,
                 "relevance": round(r.relevance, 3)

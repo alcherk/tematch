@@ -24,6 +24,14 @@ export default function ChannelMessages() {
   const [data, setData] = useState<ChannelMessagesResponse | null>(null);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [expanded, setExpanded] = useState<Set<number>>(new Set());
+
+  const toggle = (msgId: number) =>
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      next.has(msgId) ? next.delete(msgId) : next.add(msgId);
+      return next;
+    });
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -76,8 +84,13 @@ export default function ChannelMessages() {
           </thead>
           <tbody>
             {data.messages.map((m) => (
-              <tr key={m.id}>
-                <td style={{ color: 'var(--text-primary)', fontSize: '0.8rem', lineHeight: 1.4, maxWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <tr key={m.id} onClick={() => toggle(m.id)} style={{ cursor: 'pointer' }}>
+                <td style={{
+                  color: 'var(--text-primary)', fontSize: '0.8rem', lineHeight: 1.4,
+                  ...(expanded.has(m.id)
+                    ? { whiteSpace: 'pre-wrap', wordBreak: 'break-word' }
+                    : { maxWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }),
+                }}>
                   {m.text}
                 </td>
                 <td className="cyber-mono" style={{ fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
