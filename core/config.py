@@ -34,6 +34,7 @@ class Settings(BaseSettings):
     EMBEDDING_FLUSH_INTERVAL: int = 30
     RESYNC_MAX_HOURS: int = 72
     RESYNC_BATCH_SIZE: int = 100
+    RESYNC_SIGNAL_FILE: str = "/tmp/tematch-resync"
 
     # Web Dashboard
     ADMIN_TELEGRAM_ID: int = 0

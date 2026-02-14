@@ -2,6 +2,7 @@
 
 import datetime as dt
 from datetime import datetime, timedelta
+from pathlib import Path
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import func, select
@@ -157,6 +158,15 @@ async def admin_health(
             ),
         },
     }
+
+
+@router.post("/resync")
+async def admin_resync(_admin: User = Depends(require_admin)):
+    """Signal the collector to resync channels."""
+    from web.main import _settings
+
+    Path(_settings.RESYNC_SIGNAL_FILE).touch()
+    return {"ok": True, "message": "Resync signal sent"}
 
 
 @router.get("/users")

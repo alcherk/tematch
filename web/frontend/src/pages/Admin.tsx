@@ -23,6 +23,19 @@ export default function Admin() {
     apiFetch<any[]>(`/api/admin/costs?period=${period}`).then(setCosts);
   }, [period]);
 
+  const [resyncStatus, setResyncStatus] = useState<'idle' | 'sending' | 'sent'>('idle');
+
+  const handleResync = async () => {
+    setResyncStatus('sending');
+    try {
+      await apiFetch('/api/admin/resync', { method: 'POST' });
+      setResyncStatus('sent');
+      setTimeout(() => setResyncStatus('idle'), 3000);
+    } catch {
+      setResyncStatus('idle');
+    }
+  };
+
   const handleVote = async (recId: number, feedback: 'like' | 'dislike') => {
     setRecs((prev) =>
       prev.map((r) => (r.id === recId ? { ...r, feedback } : r))
@@ -119,10 +132,20 @@ export default function Admin() {
       {/* System Health */}
       {health && (
         <section className="cyber-card animate-in animate-in-5" style={{ padding: '1.75rem' }}>
-          <h3 className="cyber-heading" style={{ marginBottom: '1rem' }}>
-            <span style={{ color: 'var(--cyan)', marginRight: '0.5rem', opacity: 0.5 }}>▸</span>
-            System Health
-          </h3>
+          <div className="flex justify-between items-center" style={{ marginBottom: '1rem' }}>
+            <h3 className="cyber-heading">
+              <span style={{ color: 'var(--cyan)', marginRight: '0.5rem', opacity: 0.5 }}>▸</span>
+              System Health
+            </h3>
+            <button
+              onClick={handleResync}
+              disabled={resyncStatus !== 'idle'}
+              className="cyber-btn cyber-btn-solid"
+              style={{ fontSize: '0.65rem', padding: '0.3rem 0.75rem' }}
+            >
+              {resyncStatus === 'sending' ? 'Sending...' : resyncStatus === 'sent' ? 'Sent ✓' : 'Resync Channels'}
+            </button>
+          </div>
           <p className="cyber-mono" style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
             Embedding coverage: <span style={{ color: 'var(--cyan)' }}>{health.embedding_coverage}%</span>
           </p>

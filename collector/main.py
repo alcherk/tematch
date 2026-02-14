@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 
 from telethon import TelegramClient, events
 
@@ -75,6 +76,19 @@ async def main():
         while True:
             await asyncio.sleep(settings.EMBEDDING_FLUSH_INTERVAL)
             await embedding_buffer.flush()
+
+            # Check for resync signal from bot/web admin
+            if os.path.exists(settings.RESYNC_SIGNAL_FILE):
+                os.remove(settings.RESYNC_SIGNAL_FILE)
+                logger.info("Resync signal received, starting resync...")
+                await resync_channels(
+                    client=client,
+                    session_factory=session_factory,
+                    embedding_buffer=embedding_buffer,
+                    max_hours=settings.RESYNC_MAX_HOURS,
+                    batch_size=settings.RESYNC_BATCH_SIZE,
+                )
+                logger.info("Signal-triggered resync complete.")
 
     await client.start()
 

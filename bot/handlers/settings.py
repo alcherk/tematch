@@ -1,9 +1,12 @@
+from pathlib import Path
+
 from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import Message
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from core.config import Settings
 from core.embeddings import EmbeddingService
 from core.models import User
 
@@ -56,3 +59,14 @@ async def cmd_schedule(message: Message, session: AsyncSession):
         await message.answer("Автодайджест отключён.")
     else:
         await message.answer(f"Расписание обновлено: {text}")
+
+
+@router.message(Command("resync"))
+async def cmd_resync(message: Message, settings: Settings):
+    if message.from_user.id != settings.ADMIN_TELEGRAM_ID:
+        return
+
+    Path(settings.RESYNC_SIGNAL_FILE).touch()
+    await message.answer(
+        "Resync запрошен. Collector выполнит в течение 30 секунд."
+    )
