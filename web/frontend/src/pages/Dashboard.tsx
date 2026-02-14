@@ -138,27 +138,25 @@ export default function Dashboard() {
                   <span className="cyber-mono" style={{ color: 'var(--text-muted)' }}>
                     {new Date(d.created_at).toLocaleString()}
                   </span>
-                  <span className="flex gap-1">
+                  <span className="flex gap-1" style={{ fontSize: '1rem' }}>
                     <button
                       onClick={() => handleVote(d.id, 'like')}
-                      className="cyber-btn"
                       style={{
-                        padding: '0.15rem 0.4rem',
-                        fontSize: '0.75rem',
-                        color: d.feedback === 'like' ? 'var(--neon-green)' : 'var(--text-muted)',
-                        borderColor: d.feedback === 'like' ? 'var(--neon-green)' : undefined,
+                        background: 'none', border: 'none', cursor: 'pointer', padding: '0 0.15rem',
+                        opacity: d.feedback === 'like' ? 1 : d.feedback ? 0.25 : 0.4,
+                        filter: d.feedback === 'like' ? 'drop-shadow(0 0 4px var(--neon-green))' : 'none',
+                        transition: 'opacity 0.15s, filter 0.15s',
                       }}
                     >
                       👍
                     </button>
                     <button
                       onClick={() => handleVote(d.id, 'dislike')}
-                      className="cyber-btn"
                       style={{
-                        padding: '0.15rem 0.4rem',
-                        fontSize: '0.75rem',
-                        color: d.feedback === 'dislike' ? 'var(--neon-red)' : 'var(--text-muted)',
-                        borderColor: d.feedback === 'dislike' ? 'var(--neon-red)' : undefined,
+                        background: 'none', border: 'none', cursor: 'pointer', padding: '0 0.15rem',
+                        opacity: d.feedback === 'dislike' ? 1 : d.feedback ? 0.25 : 0.4,
+                        filter: d.feedback === 'dislike' ? 'drop-shadow(0 0 4px var(--neon-red))' : 'none',
+                        transition: 'opacity 0.15s, filter 0.15s',
                       }}
                     >
                       👎

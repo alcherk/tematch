@@ -172,27 +172,25 @@ export default function Admin() {
                 </td>
                 <td className="cyber-mono" style={{ fontSize: '0.8rem' }}>{r.score.toFixed(2)}</td>
                 <td>
-                  <span className="flex gap-1">
+                  <span className="flex gap-1" style={{ fontSize: '0.95rem' }}>
                     <button
                       onClick={() => handleVote(r.id, 'like')}
-                      className="cyber-btn"
                       style={{
-                        padding: '0.1rem 0.35rem',
-                        fontSize: '0.7rem',
-                        color: r.feedback === 'like' ? 'var(--neon-green)' : 'var(--text-muted)',
-                        borderColor: r.feedback === 'like' ? 'var(--neon-green)' : undefined,
+                        background: 'none', border: 'none', cursor: 'pointer', padding: '0 0.15rem',
+                        opacity: r.feedback === 'like' ? 1 : r.feedback ? 0.25 : 0.4,
+                        filter: r.feedback === 'like' ? 'drop-shadow(0 0 4px var(--neon-green))' : 'none',
+                        transition: 'opacity 0.15s, filter 0.15s',
                       }}
                     >
                       👍
                     </button>
                     <button
                       onClick={() => handleVote(r.id, 'dislike')}
-                      className="cyber-btn"
                       style={{
-                        padding: '0.1rem 0.35rem',
-                        fontSize: '0.7rem',
-                        color: r.feedback === 'dislike' ? 'var(--neon-red)' : 'var(--text-muted)',
-                        borderColor: r.feedback === 'dislike' ? 'var(--neon-red)' : undefined,
+                        background: 'none', border: 'none', cursor: 'pointer', padding: '0 0.15rem',
+                        opacity: r.feedback === 'dislike' ? 1 : r.feedback ? 0.25 : 0.4,
+                        filter: r.feedback === 'dislike' ? 'drop-shadow(0 0 4px var(--neon-red))' : 'none',
+                        transition: 'opacity 0.15s, filter 0.15s',
                       }}
                     >
                       👎
