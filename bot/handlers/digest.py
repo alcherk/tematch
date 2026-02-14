@@ -1,4 +1,5 @@
-from datetime import datetime
+from datetime import datetime, timedelta
+from typing import Optional
 
 from aiogram import F, Router
 from aiogram.filters import Command
@@ -16,8 +17,8 @@ from bot.formatters import (
 )
 from bot.keyboards import digest_keyboard
 from core.config import Settings
+from core.models import Channel, Recommendation, User, UserChannel
 from core.models import Message as MsgModel
-from core.models import Recommendation, User, UserChannel
 from core.recommender import Recommender, compute_window_start
 
 router = Router()
@@ -36,6 +37,42 @@ async def count_digests_today(session: AsyncSession, user_id: int) -> int:
     return result.scalar_one_or_none() or 0
 
 
+async def _resolve_channel(
+    session: AsyncSession, user_id: int, arg: str,
+) -> Optional[Channel]:
+    """Resolve channel arg to a Channel the user is subscribed to."""
+    arg = arg.lstrip("@")
+    stmt = (
+        select(Channel)
+        .join(UserChannel)
+        .where(
+            UserChannel.user_id == user_id,
+            (Channel.username == arg) | (Channel.title == arg),
+        )
+    )
+    ch = (await session.execute(stmt)).scalar_one_or_none()
+    if ch:
+        return ch
+    # Try telegram_id (bare or with -100 prefix)
+    for candidate in [arg, f"-100{arg}"]:
+        try:
+            tid = int(candidate)
+        except ValueError:
+            continue
+        stmt = (
+            select(Channel)
+            .join(UserChannel)
+            .where(
+                UserChannel.user_id == user_id,
+                Channel.telegram_id == tid,
+            )
+        )
+        ch = (await session.execute(stmt)).scalar_one_or_none()
+        if ch:
+            return ch
+    return None
+
+
 @router.message(Command("digest"))
 async def cmd_digest(
     message: TgMessage, session: AsyncSession, recommender: Recommender,
@@ -51,14 +88,29 @@ async def cmd_digest(
         await message.answer("Сначала настрой интересы: /interests <описание>")
         return
 
+    # Parse optional channel argument: /digest @channel or /digest title
+    channel_arg = message.text.replace("/digest", "", 1).strip() if message.text else ""
+
     # Get user's channel IDs
     ch_stmt = select(UserChannel.channel_id).where(UserChannel.user_id == user.id)
-    channel_ids = (await session.execute(ch_stmt)).scalars().all()
-    if not channel_ids:
+    all_channel_ids = (await session.execute(ch_stmt)).scalars().all()
+    if not all_channel_ids:
         await message.answer(
             "Добавь каналы: перешли сообщение из канала или отправь @channel_name"
         )
         return
+
+    # Resolve target channel if argument provided
+    single_channel = False
+    if channel_arg:
+        target = await _resolve_channel(session, user.id, channel_arg)
+        if not target:
+            await message.answer("Канал не найден среди подписок.")
+            return
+        channel_ids = [target.id]
+        single_channel = True
+    else:
+        channel_ids = list(all_channel_ids)
 
     is_admin = user.telegram_id == settings.ADMIN_TELEGRAM_ID
 
@@ -82,16 +134,20 @@ async def cmd_digest(
 
     await message.answer("Подбираю рекомендации...")
 
-    window = compute_window_start(
-        last_digest_at=user.last_digest_at,
-        max_hours=72,
-    )
+    if single_channel:
+        # Full 72h window for per-channel digest, ignore last_digest_at
+        window = datetime.utcnow() - timedelta(hours=72)
+    else:
+        window = compute_window_start(
+            last_digest_at=user.last_digest_at,
+            max_hours=72,
+        )
 
     ranked = await recommender.recommend(
         session=session,
         user_id=user.id,
         interests=user.interests,
-        channel_ids=list(channel_ids),
+        channel_ids=channel_ids,
         window_start=window,
         interests_embedding=user.interests_embedding,
     )
@@ -139,7 +195,8 @@ async def cmd_digest(
             text, parse_mode="HTML", reply_markup=digest_keyboard(page_items),
         )
 
-    user.last_digest_at = datetime.utcnow()
+    if not single_channel:
+        user.last_digest_at = datetime.utcnow()
     await session.commit()
 
 
