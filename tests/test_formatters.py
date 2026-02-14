@@ -449,3 +449,118 @@ def test_format_recommendation_uses_text_html():
     )
     result = format_recommendation(msg, ch, score=0.9, thread_messages=None)
     assert "<em>Italic</em>" in result
+
+
+# --- Rich digest format ---
+
+
+def test_rich_digest_header_format():
+    """Header should have emoji, bold channel, percentage score."""
+    items = [_make_digest_item(index=1, score=0.8523, title="TestChan")]
+    result = format_digest_page(items)
+    assert "📌 1" in result
+    assert "<b>TestChan</b>" in result
+    assert "⭐ 85%" in result
+    # Old decimal format should NOT appear
+    assert "0.85" not in result
+
+
+def test_rich_digest_divider():
+    """Divider between items should use box-drawing character."""
+    items = [
+        _make_digest_item(index=1, rec_id=100),
+        _make_digest_item(index=2, rec_id=101),
+    ]
+    result = format_digest_page(items)
+    assert "━" in result
+    # Old divider should NOT appear
+    assert "———" not in result
+
+
+def test_rich_digest_short_body_inline():
+    """Body <=150 chars should be inline (no blockquote)."""
+    items = [_make_digest_item(text="Short message body here")]
+    result = format_digest_page(items)
+    assert "Short message body here" in result
+    assert "<blockquote" not in result
+
+
+def test_rich_digest_long_body_expandable():
+    """Body >150 chars should be in expandable blockquote."""
+    long_text = "A" * 200
+    items = [_make_digest_item(text=long_text)]
+    result = format_digest_page(items)
+    assert "<blockquote expandable>" in result
+    assert "</blockquote>" in result
+
+
+def test_rich_digest_thread_counts():
+    """Thread should show counts, not inline snippets."""
+    thread = {
+        "parents": [_make_msg(text="Parent 1"), _make_msg(text="Parent 2")],
+        "children": [_make_msg(text="Child reply")],
+    }
+    items = [_make_digest_item(thread=thread)]
+    result = format_digest_page(items)
+    # Should have count summary
+    assert "↩️ 2" in result
+    assert "💬 1" in result
+    # Should NOT have inline parent/child text
+    assert "Parent 1" not in result
+    assert "Child reply" not in result
+
+
+def test_rich_digest_thread_only_parents():
+    """Thread with only parents (no children) should only show parent count."""
+    thread = {
+        "parents": [_make_msg(text="Parent")],
+        "children": [],
+    }
+    items = [_make_digest_item(thread=thread)]
+    result = format_digest_page(items)
+    assert "↩️ 1" in result
+    assert "💬" not in result
+
+
+def test_rich_digest_thread_only_children():
+    """Thread with only children (no parents) should only show child count."""
+    thread = {
+        "parents": [],
+        "children": [_make_msg(text="Reply 1"), _make_msg(text="Reply 2")],
+    }
+    items = [_make_digest_item(thread=thread)]
+    result = format_digest_page(items)
+    assert "💬 2" in result
+    assert "↩️" not in result
+
+
+def test_rich_digest_no_thread_no_summary():
+    """No thread context = no thread summary line."""
+    items = [_make_digest_item(thread=None)]
+    result = format_digest_page(items)
+    assert "↩️" not in result
+    assert "💬" not in result
+
+
+def test_rich_digest_text_html_in_expandable():
+    """text_html should be used inside expandable blockquote."""
+    msg = _make_msg_with_html(
+        text="A" * 200,
+        text_html="<strong>" + "A" * 200 + "</strong>",
+    )
+    ch = _make_channel(username="chan")
+    ch.title = "Test Channel"
+    item = DigestItem(index=1, msg=msg, channel=ch, score=0.8, rec_id=100)
+    result = format_digest_page([item])
+    assert "<blockquote expandable>" in result
+    assert "<strong>" in result
+
+
+def test_rich_digest_max_body_len_800():
+    """Body should truncate at 800 chars, not 600."""
+    text_700 = "B" * 700
+    items = [_make_digest_item(text=text_700)]
+    result = format_digest_page(items)
+    # 700 chars should NOT be truncated (old limit was 600)
+    assert "…" not in result
+    assert "B" * 700 in result
