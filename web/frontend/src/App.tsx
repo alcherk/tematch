@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { apiFetch } from './api';
 import Layout from './components/Layout';
+import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
 
 function App() {
@@ -22,7 +23,7 @@ function App() {
       <Routes>
         <Route path="/login" element={user ? <Navigate to="/dashboard" /> : <Login />} />
         <Route element={user ? <Layout isAdmin={user.is_admin} /> : <Navigate to="/login" />}>
-          <Route path="/dashboard" element={<div>Dashboard (next task)</div>} />
+          <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/admin" element={user?.is_admin ? <div>Admin (next task)</div> : <Navigate to="/dashboard" />} />
         </Route>
         <Route path="*" element={<Navigate to="/dashboard" />} />
