@@ -4,7 +4,9 @@ from typing import Optional
 from aiogram import Bot
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker
+from sqlalchemy.orm import selectinload
 
+from bot.formatters import fetch_thread_context, format_recommendation
 from bot.keyboards import feedback_keyboard
 from core.models import Message, Recommendation, UserChannel
 from core.recommender import Recommender
@@ -56,9 +58,16 @@ async def send_digest_to_user(
         await bot.send_message(telegram_id, "📬 Твой дайджест готов!")
 
         for item in ranked:
-            msg = await session.get(Message, item["message_id"])
+            stmt = (
+                select(Message)
+                .where(Message.id == item["message_id"])
+                .options(selectinload(Message.channel))
+            )
+            msg = (await session.execute(stmt)).scalar_one_or_none()
             if not msg:
                 continue
+
+            thread = await fetch_thread_context(session, msg)
 
             rec = Recommendation(
                 user_id=user_id,
@@ -70,10 +79,7 @@ async def send_digest_to_user(
             await session.commit()
             await session.refresh(rec)
 
-            text = (
-                f"📌 *Рекомендация* (score: {item['score']:.2f})\n\n"
-                f"{msg.text[:4000]}"
-            )
+            text = format_recommendation(msg, msg.channel, item["score"], thread)
             await bot.send_message(
                 telegram_id, text, reply_markup=feedback_keyboard(rec.id)
             )

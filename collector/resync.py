@@ -80,6 +80,10 @@ async def resync_channels(
             if not msg.text or len(msg.text.strip()) < 20:
                 continue
 
+            reply_to_msg_id = None
+            if msg.reply_to and hasattr(msg.reply_to, "reply_to_msg_id"):
+                reply_to_msg_id = msg.reply_to.reply_to_msg_id
+
             async with session_factory() as session:
                 await handle_new_message(
                     session=session,
@@ -88,6 +92,7 @@ async def resync_channels(
                     text=msg.text,
                     date=msg.date,
                     embedding_buffer=embedding_buffer,
+                    reply_to_msg_id=reply_to_msg_id,
                 )
             count += 1
 

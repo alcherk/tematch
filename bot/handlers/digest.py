@@ -6,7 +6,9 @@ from aiogram.types import CallbackQuery
 from aiogram.types import Message as TgMessage
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
+from bot.formatters import fetch_thread_context, format_recommendation
 from bot.keyboards import feedback_keyboard
 from core.models import Message as MsgModel
 from core.models import Recommendation, User, UserChannel
@@ -91,9 +93,16 @@ async def cmd_digest(
         return
 
     for item in ranked:
-        msg = await session.get(MsgModel, item["message_id"])
+        stmt = (
+            select(MsgModel)
+            .where(MsgModel.id == item["message_id"])
+            .options(selectinload(MsgModel.channel))
+        )
+        msg = (await session.execute(stmt)).scalar_one_or_none()
         if not msg:
             continue
+
+        thread = await fetch_thread_context(session, msg)
 
         rec = Recommendation(
             user_id=user.id, message_id=msg.id, score=item["score"], delivered=True
@@ -102,7 +111,7 @@ async def cmd_digest(
         await session.commit()
         await session.refresh(rec)
 
-        text = f"📌 *Рекомендация* (score: {item['score']:.2f})\n\n{msg.text[:4000]}"
+        text = format_recommendation(msg, msg.channel, item["score"], thread)
         await message.answer(text, reply_markup=feedback_keyboard(rec.id))
 
     user.last_digest_at = datetime.utcnow()

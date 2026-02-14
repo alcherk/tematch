@@ -52,6 +52,10 @@ async def main():
             if chat.id not in active_ids:
                 return
 
+            reply_to_msg_id = None
+            if event.reply_to and hasattr(event.reply_to, "reply_to_msg_id"):
+                reply_to_msg_id = event.reply_to.reply_to_msg_id
+
             await handle_new_message(
                 session=session,
                 channel_telegram_id=chat.id,
@@ -59,6 +63,7 @@ async def main():
                 text=event.raw_text,
                 date=event.date,
                 embedding_buffer=embedding_buffer,
+                reply_to_msg_id=reply_to_msg_id,
             )
 
         if embedding_buffer.should_flush:

@@ -77,6 +77,7 @@ class Message(Base):
     channel_id: Mapped[int] = mapped_column(ForeignKey("channels.id"))
     telegram_msg_id: Mapped[int] = mapped_column(nullable=False)
     text: Mapped[str] = mapped_column(Text, nullable=False)
+    reply_to_msg_id: Mapped[Optional[int]] = mapped_column(index=True)
     content_hash: Mapped[Optional[str]] = mapped_column(String(64), index=True)
     date: Mapped[Optional[datetime]] = mapped_column()
     embedding = mapped_column(Vector(1536), nullable=True)
