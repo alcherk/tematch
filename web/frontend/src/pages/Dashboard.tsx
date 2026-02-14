@@ -43,77 +43,111 @@ export default function Dashboard() {
     await loadData();
   };
 
-  if (!profile) return <p>Loading...</p>;
+  if (!profile) return (
+    <p className="cyber-mono" style={{ color: 'var(--text-muted)' }}>Loading...</p>
+  );
 
   return (
     <div className="max-w-3xl space-y-8">
-      <h2 className="text-2xl font-bold">My Dashboard</h2>
+      <h2 className="cyber-heading-lg animate-in">Dashboard</h2>
 
       {/* Settings */}
-      <section className="bg-white rounded-lg shadow p-6 space-y-4">
-        <h3 className="font-semibold text-lg">Settings</h3>
-        <div>
-          <label className="block text-sm text-gray-600 mb-1">Interests</label>
+      <section className="cyber-card animate-in animate-in-1" style={{ padding: '1.75rem' }}>
+        <h3 className="cyber-heading" style={{ marginBottom: '1.25rem' }}>
+          <span style={{ color: 'var(--cyan)', marginRight: '0.5rem', opacity: 0.5 }}>▸</span>
+          Settings
+        </h3>
+        <div style={{ marginBottom: '1rem' }}>
+          <label className="cyber-label" style={{ display: 'block', marginBottom: '0.5rem' }}>Interests</label>
           <textarea
             value={interests}
             onChange={(e) => setInterests(e.target.value)}
-            className="w-full border rounded p-2 text-sm"
+            className="cyber-input"
+            style={{ width: '100%', resize: 'vertical', minHeight: '3.5rem' }}
             rows={2}
           />
         </div>
-        <div>
-          <label className="block text-sm text-gray-600 mb-1">Digest Schedule</label>
-          <select
-            value={SCHEDULE_PRESETS.find((p) => p.value === cron) ? cron : '__custom__'}
-            onChange={(e) => setCron(e.target.value === '__custom__' ? cron : e.target.value)}
-            className="border rounded p-2 text-sm"
-          >
-            {SCHEDULE_PRESETS.map((p) => (
-              <option key={p.value} value={p.value}>{p.label}</option>
-            ))}
-            <option value="__custom__">Custom</option>
-          </select>
-          {!SCHEDULE_PRESETS.find((p) => p.value === cron) && (
-            <input
-              value={cron}
-              onChange={(e) => setCron(e.target.value)}
-              className="ml-2 border rounded p-2 text-sm"
-              placeholder="0 9 * * *"
-            />
-          )}
+        <div style={{ marginBottom: '1.25rem' }}>
+          <label className="cyber-label" style={{ display: 'block', marginBottom: '0.5rem' }}>Digest Schedule</label>
+          <div className="flex items-center gap-2 flex-wrap">
+            <select
+              value={SCHEDULE_PRESETS.find((p) => p.value === cron) ? cron : '__custom__'}
+              onChange={(e) => setCron(e.target.value === '__custom__' ? cron : e.target.value)}
+              className="cyber-select"
+            >
+              {SCHEDULE_PRESETS.map((p) => (
+                <option key={p.value} value={p.value}>{p.label}</option>
+              ))}
+              <option value="__custom__">Custom</option>
+            </select>
+            {!SCHEDULE_PRESETS.find((p) => p.value === cron) && (
+              <input
+                value={cron}
+                onChange={(e) => setCron(e.target.value)}
+                className="cyber-input"
+                placeholder="0 9 * * *"
+                style={{ width: '140px' }}
+              />
+            )}
+          </div>
         </div>
-        <button
-          onClick={save}
-          disabled={saving}
-          className="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700 disabled:opacity-50"
-        >
+        <button onClick={save} disabled={saving} className="cyber-btn cyber-btn-solid">
           {saving ? 'Saving...' : 'Save'}
         </button>
       </section>
 
       {/* Channels */}
-      <section className="bg-white rounded-lg shadow p-6">
-        <h3 className="font-semibold text-lg mb-4">My Channels ({channels.length})</h3>
-        {channels.length ? <ChannelList channels={channels} onRefresh={loadData} /> : <p className="text-gray-500">No channels yet. Forward a message to the bot to subscribe.</p>}
+      <section className="cyber-card animate-in animate-in-2" style={{ padding: '1.75rem' }}>
+        <h3 className="cyber-heading" style={{ marginBottom: '1rem' }}>
+          <span style={{ color: 'var(--cyan)', marginRight: '0.5rem', opacity: 0.5 }}>▸</span>
+          My Channels
+          <span className="cyber-mono" style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginLeft: '0.75rem' }}>
+            [{channels.length}]
+          </span>
+        </h3>
+        {channels.length ? (
+          <ChannelList channels={channels} onRefresh={loadData} />
+        ) : (
+          <p style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontSize: '0.85rem' }}>
+            No channels yet. Forward a message to the bot to subscribe.
+          </p>
+        )}
       </section>
 
       {/* Digest History */}
-      <section className="bg-white rounded-lg shadow p-6">
-        <h3 className="font-semibold text-lg mb-4">Recent Digests</h3>
+      <section className="cyber-card animate-in animate-in-3" style={{ padding: '1.75rem' }}>
+        <h3 className="cyber-heading" style={{ marginBottom: '1rem' }}>
+          <span style={{ color: 'var(--cyan)', marginRight: '0.5rem', opacity: 0.5 }}>▸</span>
+          Recent Digests
+        </h3>
         {digests.length ? (
           <div className="space-y-3">
             {digests.map((d) => (
-              <div key={d.id} className="border-b pb-3">
-                <div className="flex justify-between text-sm">
-                  <span className="font-medium">Score: {d.score.toFixed(2)}</span>
-                  <span className="text-gray-500">{new Date(d.created_at).toLocaleString()}</span>
-                  {d.feedback && <span className={d.feedback === 'like' ? 'text-green-600' : 'text-red-500'}>{d.feedback}</span>}
+              <div key={d.id} style={{ borderBottom: '1px solid var(--border-dim)', paddingBottom: '0.75rem' }}>
+                <div className="flex justify-between items-center" style={{ fontSize: '0.8rem' }}>
+                  <span className="cyber-mono" style={{ color: 'var(--cyan)' }}>
+                    Score: {d.score.toFixed(2)}
+                  </span>
+                  <span className="cyber-mono" style={{ color: 'var(--text-muted)' }}>
+                    {new Date(d.created_at).toLocaleString()}
+                  </span>
+                  {d.feedback && (
+                    <span style={{ color: d.feedback === 'like' ? 'var(--neon-green)' : 'var(--neon-red)' }}>
+                      {d.feedback === 'like' ? '▲' : '▼'}
+                    </span>
+                  )}
                 </div>
-                <p className="text-sm text-gray-700 mt-1">{d.text_preview}</p>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.4rem' }}>
+                  {d.text_preview}
+                </p>
               </div>
             ))}
           </div>
-        ) : <p className="text-gray-500">No digests yet. Send /digest in the bot.</p>}
+        ) : (
+          <p style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontSize: '0.85rem' }}>
+            No digests yet. Send /digest in the bot.
+          </p>
+        )}
       </section>
     </div>
   );

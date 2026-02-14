@@ -1,8 +1,10 @@
 export default function StatCard({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <p className="text-sm text-gray-500">{label}</p>
-      <p className="text-2xl font-bold mt-1">{value}</p>
+    <div className="cyber-card animate-in">
+      <p className="cyber-label">{label}</p>
+      <p className="cyber-mono" style={{ fontSize: '1.75rem', fontWeight: 400, color: 'var(--cyan)', marginTop: '0.5rem' }}>
+        {value}
+      </p>
     </div>
   );
 }

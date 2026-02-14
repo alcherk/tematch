@@ -9,7 +9,6 @@ interface CostEntry {
 }
 
 export default function CostChart({ data }: { data: CostEntry[] }) {
-  // Group by date, aggregate per provider
   const byDate = new Map<string, Record<string, string | number>>();
   for (const d of data) {
     const existing = byDate.get(d.date) || { date: d.date };
@@ -20,14 +19,34 @@ export default function CostChart({ data }: { data: CostEntry[] }) {
   const chartData = Array.from(byDate.values());
 
   return (
-    <ResponsiveContainer width="100%" height={300}>
+    <ResponsiveContainer width="100%" height={280}>
       <BarChart data={chartData}>
-        <XAxis dataKey="date" tick={{ fontSize: 12 }} />
-        <YAxis tick={{ fontSize: 12 }} />
-        <Tooltip />
-        <Legend />
-        <Bar dataKey="openai_cost" name="OpenAI ($)" fill="#10b981" stackId="cost" />
-        <Bar dataKey="claude_cost" name="Claude ($)" fill="#6366f1" stackId="cost" />
+        <XAxis
+          dataKey="date"
+          tick={{ fontSize: 11, fill: '#4a4e62', fontFamily: 'Share Tech Mono' }}
+          axisLine={{ stroke: 'rgba(0, 240, 255, 0.08)' }}
+          tickLine={false}
+        />
+        <YAxis
+          tick={{ fontSize: 11, fill: '#4a4e62', fontFamily: 'Share Tech Mono' }}
+          axisLine={{ stroke: 'rgba(0, 240, 255, 0.08)' }}
+          tickLine={false}
+        />
+        <Tooltip
+          contentStyle={{
+            background: '#10101f',
+            border: '1px solid rgba(0, 240, 255, 0.2)',
+            borderRadius: 0,
+            fontFamily: 'Share Tech Mono',
+            fontSize: '0.8rem',
+            color: '#e0e4ec',
+          }}
+        />
+        <Legend
+          wrapperStyle={{ fontFamily: 'Chakra Petch', fontSize: '0.75rem', letterSpacing: '0.05em' }}
+        />
+        <Bar dataKey="openai_cost" name="OpenAI" fill="#00ff88" stackId="cost" radius={[1, 1, 0, 0]} />
+        <Bar dataKey="claude_cost" name="Claude" fill="#ff0080" stackId="cost" radius={[1, 1, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>
   );

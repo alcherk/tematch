@@ -20,11 +20,13 @@ export default function Admin() {
     apiFetch<any[]>(`/api/admin/costs?period=${period}`).then(setCosts);
   }, [period]);
 
-  if (!stats) return <p>Loading...</p>;
+  if (!stats) return (
+    <p className="cyber-mono" style={{ color: 'var(--text-muted)' }}>Loading...</p>
+  );
 
   return (
     <div className="space-y-8">
-      <h2 className="text-2xl font-bold">Admin Panel</h2>
+      <h2 className="cyber-heading-lg animate-in">Admin Panel</h2>
 
       {/* Overview Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -35,66 +37,95 @@ export default function Admin() {
       </div>
 
       {/* Cost Chart */}
-      <section className="bg-white rounded-lg shadow p-6">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="font-semibold text-lg">LLM Costs</h3>
-          <div className="space-x-2">
+      <section className="cyber-card animate-in animate-in-2" style={{ padding: '1.75rem' }}>
+        <div className="flex justify-between items-center" style={{ marginBottom: '1rem' }}>
+          <h3 className="cyber-heading">
+            <span style={{ color: 'var(--cyan)', marginRight: '0.5rem', opacity: 0.5 }}>▸</span>
+            LLM Costs
+          </h3>
+          <div className="flex gap-1">
             {['7d', '30d', '90d'].map((p) => (
               <button
                 key={p}
                 onClick={() => setPeriod(p)}
-                className={`px-3 py-1 rounded text-sm ${period === p ? 'bg-blue-600 text-white' : 'bg-gray-100'}`}
+                className={`cyber-btn ${period === p ? 'cyber-btn-solid' : ''}`}
+                style={{ fontSize: '0.65rem', padding: '0.3rem 0.75rem' }}
               >
                 {p}
               </button>
             ))}
           </div>
         </div>
-        <p className="text-sm text-gray-500 mb-4">
-          Today: ${stats.cost_today.toFixed(4)} | Tokens: {stats.tokens_today.toLocaleString()}
+        <p className="cyber-mono" style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
+          Today: <span style={{ color: 'var(--neon-green)' }}>${stats.cost_today.toFixed(4)}</span>
+          <span style={{ margin: '0 0.75rem', opacity: 0.3 }}>│</span>
+          Tokens: <span style={{ color: 'var(--cyan)' }}>{stats.tokens_today.toLocaleString()}</span>
         </p>
         <CostChart data={costs} />
       </section>
 
       {/* Token Budget */}
       {health && (
-        <section className="bg-white rounded-lg shadow p-6">
-          <h3 className="font-semibold text-lg mb-4">Token Budget</h3>
-          <div className="w-full bg-gray-200 rounded-full h-4">
+        <section className="cyber-card animate-in animate-in-3" style={{ padding: '1.75rem' }}>
+          <h3 className="cyber-heading" style={{ marginBottom: '1rem' }}>
+            <span style={{ color: 'var(--cyan)', marginRight: '0.5rem', opacity: 0.5 }}>▸</span>
+            Token Budget
+          </h3>
+          <div className="cyber-progress" style={{ marginBottom: '0.5rem' }}>
             <div
-              className={`h-4 rounded-full ${health.token_budget.percent > 80 ? 'bg-red-500' : 'bg-green-500'}`}
-              style={{ width: `${Math.min(health.token_budget.percent, 100)}%` }}
+              className="cyber-progress-fill"
+              style={{
+                width: `${Math.min(health.token_budget.percent, 100)}%`,
+                background: health.token_budget.percent > 80
+                  ? 'var(--neon-red)'
+                  : health.token_budget.percent > 50
+                  ? 'var(--neon-amber)'
+                  : 'var(--neon-green)',
+                boxShadow: `0 0 8px ${
+                  health.token_budget.percent > 80 ? 'var(--neon-red)' : health.token_budget.percent > 50 ? 'var(--neon-amber)' : 'var(--neon-green)'
+                }`,
+              }}
             />
           </div>
-          <p className="text-sm text-gray-500 mt-2">
-            {health.token_budget.used.toLocaleString()} / {health.token_budget.limit.toLocaleString()} ({health.token_budget.percent}%)
+          <p className="cyber-mono" style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+            {health.token_budget.used.toLocaleString()} / {health.token_budget.limit.toLocaleString()}
+            <span style={{ marginLeft: '0.5rem', color: health.token_budget.percent > 80 ? 'var(--neon-red)' : 'var(--text-secondary)' }}>
+              ({health.token_budget.percent}%)
+            </span>
           </p>
         </section>
       )}
 
       {/* System Health */}
       {health && (
-        <section className="bg-white rounded-lg shadow p-6">
-          <h3 className="font-semibold text-lg mb-4">System Health</h3>
-          <p className="text-sm text-gray-500 mb-3">Embedding coverage: {health.embedding_coverage}%</p>
-          <table className="w-full text-sm">
+        <section className="cyber-card animate-in animate-in-4" style={{ padding: '1.75rem' }}>
+          <h3 className="cyber-heading" style={{ marginBottom: '1rem' }}>
+            <span style={{ color: 'var(--cyan)', marginRight: '0.5rem', opacity: 0.5 }}>▸</span>
+            System Health
+          </h3>
+          <p className="cyber-mono" style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
+            Embedding coverage: <span style={{ color: 'var(--cyan)' }}>{health.embedding_coverage}%</span>
+          </p>
+          <table className="cyber-table">
             <thead>
-              <tr className="text-left text-gray-500 border-b">
-                <th className="py-2">Channel</th>
+              <tr>
+                <th>Channel</th>
                 <th>Status</th>
                 <th>Last Fetch</th>
               </tr>
             </thead>
             <tbody>
               {health.channels.map((ch: any) => (
-                <tr key={ch.id} className="border-b">
-                  <td className="py-2">{ch.title}</td>
+                <tr key={ch.id}>
+                  <td style={{ color: 'var(--text-primary)' }}>{ch.title}</td>
                   <td>
-                    <span className={`inline-block w-3 h-3 rounded-full ${
-                      ch.status === 'green' ? 'bg-green-500' : ch.status === 'yellow' ? 'bg-yellow-400' : 'bg-red-500'
+                    <span className={`status-dot ${
+                      ch.status === 'green' ? 'status-green' : ch.status === 'yellow' ? 'status-yellow' : 'status-red'
                     }`} />
                   </td>
-                  <td>{ch.last_fetched_hours_ago != null ? `${ch.last_fetched_hours_ago}h ago` : 'Never'}</td>
+                  <td className="cyber-mono">
+                    {ch.last_fetched_hours_ago != null ? `${ch.last_fetched_hours_ago}h ago` : 'Never'}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -103,12 +134,18 @@ export default function Admin() {
       )}
 
       {/* Users Table */}
-      <section className="bg-white rounded-lg shadow p-6">
-        <h3 className="font-semibold text-lg mb-4">Users ({users.length})</h3>
-        <table className="w-full text-sm">
+      <section className="cyber-card animate-in animate-in-5" style={{ padding: '1.75rem' }}>
+        <h3 className="cyber-heading" style={{ marginBottom: '1rem' }}>
+          <span style={{ color: 'var(--cyan)', marginRight: '0.5rem', opacity: 0.5 }}>▸</span>
+          Users
+          <span className="cyber-mono" style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginLeft: '0.75rem' }}>
+            [{users.length}]
+          </span>
+        </h3>
+        <table className="cyber-table">
           <thead>
-            <tr className="text-left text-gray-500 border-b">
-              <th className="py-2">Telegram ID</th>
+            <tr>
+              <th>Telegram ID</th>
               <th>Interests</th>
               <th>Channels</th>
               <th>Digests today</th>
@@ -117,12 +154,14 @@ export default function Admin() {
           </thead>
           <tbody>
             {users.map((u: any) => (
-              <tr key={u.telegram_id} className="border-b">
-                <td className="py-2 font-mono">{u.telegram_id}</td>
-                <td className="max-w-xs truncate">{u.interests || '—'}</td>
-                <td>{u.channels}</td>
-                <td>{u.digests_today}</td>
-                <td className="font-mono text-xs">{u.digest_cron || 'off'}</td>
+              <tr key={u.telegram_id}>
+                <td className="cyber-mono" style={{ color: 'var(--cyan)' }}>{u.telegram_id}</td>
+                <td style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {u.interests || '—'}
+                </td>
+                <td className="cyber-mono">{u.channels}</td>
+                <td className="cyber-mono">{u.digests_today}</td>
+                <td className="cyber-mono" style={{ fontSize: '0.75rem' }}>{u.digest_cron || 'off'}</td>
               </tr>
             ))}
           </tbody>

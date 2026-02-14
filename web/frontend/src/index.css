@@ -1,1 +1,193 @@
 @import "tailwindcss";
+
+/* ═══════════════════════════════════════════════
+   TEMATCH — Minimal Cyberpunk Theme
+   ═══════════════════════════════════════════════ */
+
+:root {
+  --bg-deep: #06060e;
+  --bg-surface: #0c0c18;
+  --bg-card: #10101f;
+  --bg-card-hover: #161630;
+  --border-dim: rgba(0, 240, 255, 0.08);
+  --border-glow: rgba(0, 240, 255, 0.2);
+  --border-bright: rgba(0, 240, 255, 0.4);
+  --cyan: #00f0ff;
+  --cyan-dim: rgba(0, 240, 255, 0.6);
+  --cyan-glow: rgba(0, 240, 255, 0.15);
+  --cyan-ghost: rgba(0, 240, 255, 0.05);
+  --magenta: #ff0080;
+  --magenta-dim: rgba(255, 0, 128, 0.6);
+  --magenta-glow: rgba(255, 0, 128, 0.15);
+  --neon-green: #00ff88;
+  --neon-amber: #ffaa00;
+  --neon-red: #ff3355;
+  --text-primary: #e0e4ec;
+  --text-secondary: #7a7f94;
+  --text-muted: #4a4e62;
+  --font-brand: 'Orbitron', sans-serif;
+  --font-heading: 'Chakra Petch', sans-serif;
+  --font-body: 'Titillium Web', sans-serif;
+  --font-mono: 'Share Tech Mono', monospace;
+  --cut: 10px;
+}
+
+html { font-size: 115%; }
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  margin: 0;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 9999;
+}
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-deep); }
+::-webkit-scrollbar-thumb { background: var(--border-glow); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--border-bright); }
+
+/* ─── Cyberpunk Card ────────────────────────── */
+.cyber-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-dim);
+  clip-path: polygon(0 0, calc(100% - var(--cut)) 0, 100% var(--cut), 100% 100%, var(--cut) 100%, 0 calc(100% - var(--cut)));
+  padding: 1.5rem;
+  position: relative;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+.cyber-card:hover {
+  border-color: var(--border-glow);
+  box-shadow: 0 0 20px var(--cyan-ghost), inset 0 0 20px var(--cyan-ghost);
+}
+.cyber-card::before {
+  content: '';
+  position: absolute;
+  top: 0; right: 0;
+  width: calc(var(--cut) * 1.414);
+  height: 1px;
+  background: var(--cyan-dim);
+  transform: rotate(-45deg);
+  transform-origin: top right;
+  opacity: 0.5;
+}
+.cyber-card::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0;
+  width: calc(var(--cut) * 1.414);
+  height: 1px;
+  background: var(--cyan-dim);
+  transform: rotate(-45deg);
+  transform-origin: bottom left;
+  opacity: 0.5;
+}
+
+/* ─── Typography ────────────────────────────── */
+.cyber-heading { font-family: var(--font-heading); font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-primary); }
+.cyber-heading-lg { font-family: var(--font-heading); font-weight: 700; font-size: 1.5rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--cyan); }
+.cyber-label { font-family: var(--font-heading); font-size: 0.65rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-muted); }
+.cyber-mono { font-family: var(--font-mono); }
+
+/* ─── Buttons ───────────────────────────────── */
+.cyber-btn {
+  font-family: var(--font-heading); font-weight: 600; font-size: 0.8rem;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 0.5rem 1.25rem;
+  background: transparent; border: 1px solid var(--cyan-dim); color: var(--cyan);
+  cursor: pointer;
+  clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px));
+  transition: all 0.2s;
+}
+.cyber-btn:hover { background: var(--cyan-ghost); border-color: var(--cyan); box-shadow: 0 0 15px var(--cyan-glow); }
+.cyber-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.cyber-btn-solid { background: var(--cyan); color: var(--bg-deep); border-color: var(--cyan); }
+.cyber-btn-solid:hover { background: #33f5ff; box-shadow: 0 0 20px var(--cyan-glow); }
+.cyber-btn-danger { border-color: var(--neon-red); color: var(--neon-red); }
+.cyber-btn-danger:hover { background: rgba(255, 51, 85, 0.1); box-shadow: 0 0 15px rgba(255, 51, 85, 0.15); }
+
+/* ─── Inputs ────────────────────────────────── */
+.cyber-input {
+  font-family: var(--font-mono); font-size: 0.85rem;
+  background: var(--bg-deep); border: 1px solid var(--border-dim); color: var(--text-primary);
+  padding: 0.5rem 0.75rem; outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+}
+.cyber-input:focus { border-color: var(--cyan-dim); box-shadow: 0 0 10px var(--cyan-ghost); }
+.cyber-input::placeholder { color: var(--text-muted); }
+.cyber-select {
+  font-family: var(--font-body); font-size: 0.85rem;
+  background: var(--bg-deep); border: 1px solid var(--border-dim); color: var(--text-primary);
+  padding: 0.5rem 0.75rem; outline: none; cursor: pointer;
+}
+.cyber-select option { background: var(--bg-card); color: var(--text-primary); }
+
+/* ─── Tables ────────────────────────────────── */
+.cyber-table { width: 100%; font-size: 0.85rem; border-collapse: collapse; }
+.cyber-table thead th {
+  font-family: var(--font-heading); font-weight: 500; font-size: 0.7rem;
+  letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted);
+  border-bottom: 1px solid var(--border-dim); padding: 0.75rem 0; text-align: left;
+}
+.cyber-table tbody tr { border-bottom: 1px solid rgba(255, 255, 255, 0.03); transition: background 0.15s; }
+.cyber-table tbody tr:hover { background: var(--cyan-ghost); }
+.cyber-table tbody td { padding: 0.65rem 0; color: var(--text-secondary); }
+
+/* ─── Progress bar ──────────────────────────── */
+.cyber-progress { height: 6px; background: var(--bg-deep); border: 1px solid var(--border-dim); overflow: hidden; }
+.cyber-progress-fill { height: 100%; transition: width 0.6s ease; }
+
+/* ─── Status dots ───────────────────────────── */
+.status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; }
+.status-green { background: var(--neon-green); box-shadow: 0 0 6px var(--neon-green); }
+.status-yellow { background: var(--neon-amber); box-shadow: 0 0 6px var(--neon-amber); }
+.status-red { background: var(--neon-red); box-shadow: 0 0 6px var(--neon-red); }
+
+/* ─── Animations ────────────────────────────── */
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.animate-in { animation: fadeIn 0.4s ease both; }
+.animate-in-1 { animation-delay: 0.05s; }
+.animate-in-2 { animation-delay: 0.1s; }
+.animate-in-3 { animation-delay: 0.15s; }
+.animate-in-4 { animation-delay: 0.2s; }
+.animate-in-5 { animation-delay: 0.25s; }
+
+/* ─── Divider ───────────────────────────────── */
+.cyber-divider { border: none; height: 1px; background: linear-gradient(90deg, transparent, var(--border-glow), transparent); margin: 1.5rem 0; }
+
+/* ─── Sidebar ───────────────────────────────── */
+.cyber-sidebar {
+  background: var(--bg-surface);
+  border-right: 1px solid var(--border-dim);
+}
+.cyber-nav-link {
+  display: block;
+  padding: 0.6rem 1rem;
+  font-family: var(--font-heading);
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  text-decoration: none;
+  border-left: 2px solid transparent;
+  transition: all 0.2s;
+}
+.cyber-nav-link:hover {
+  color: var(--text-primary);
+  background: var(--cyan-ghost);
+  border-left-color: var(--border-glow);
+}
+.cyber-nav-link-active {
+  color: var(--cyan);
+  background: var(--cyan-ghost);
+  border-left-color: var(--cyan);
+}

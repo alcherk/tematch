@@ -17,7 +17,11 @@ function App() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <div className="flex items-center justify-center h-screen">Loading...</div>;
+  if (loading) return (
+    <div className="flex items-center justify-center h-screen" style={{ background: 'var(--bg-deep)' }}>
+      <p className="cyber-mono" style={{ color: 'var(--text-muted)', letterSpacing: '0.15em' }}>LOADING...</p>
+    </div>
+  );
 
   return (
     <BrowserRouter>

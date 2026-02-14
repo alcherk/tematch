@@ -16,10 +16,10 @@ export default function ChannelList({ channels, onRefresh }: { channels: Channel
   };
 
   return (
-    <table className="w-full text-sm">
+    <table className="cyber-table">
       <thead>
-        <tr className="text-left text-gray-500 border-b">
-          <th className="py-2">Channel</th>
+        <tr>
+          <th>Channel</th>
           <th>Messages</th>
           <th>Added</th>
           <th></th>
@@ -27,12 +27,15 @@ export default function ChannelList({ channels, onRefresh }: { channels: Channel
       </thead>
       <tbody>
         {channels.map((ch) => (
-          <tr key={ch.id} className="border-b hover:bg-gray-50">
-            <td className="py-2 font-medium">{ch.title}{ch.username && ` (@${ch.username})`}</td>
-            <td>{ch.message_count}</td>
+          <tr key={ch.id}>
+            <td style={{ color: 'var(--text-primary)' }}>
+              {ch.title}
+              {ch.username && <span className="cyber-mono" style={{ color: 'var(--text-muted)', marginLeft: '0.5rem', fontSize: '0.8rem' }}>@{ch.username}</span>}
+            </td>
+            <td className="cyber-mono">{ch.message_count}</td>
             <td>{ch.added_at ? new Date(ch.added_at).toLocaleDateString() : '—'}</td>
             <td>
-              <button onClick={() => unsubscribe(ch.id)} className="text-red-500 hover:underline text-xs">
+              <button onClick={() => unsubscribe(ch.id)} className="cyber-btn cyber-btn-danger" style={{ fontSize: '0.65rem', padding: '0.25rem 0.75rem' }}>
                 Remove
               </button>
             </td>
