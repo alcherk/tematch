@@ -40,6 +40,35 @@ async def telegram_login(
     return {"ok": True, "telegram_id": telegram_id}
 
 
+@router.post("/dev-login")
+async def dev_login(
+    data: dict,
+    response: Response,
+    session: AsyncSession = Depends(get_session),
+):
+    """Dev-only login bypass — skips Telegram widget verification."""
+    from web.main import _settings
+
+    if not _settings.WEB_DEV_LOGIN:
+        raise HTTPException(status_code=404, detail="Not found")
+
+    telegram_id = int(data["telegram_id"])
+    stmt = select(User).where(User.telegram_id == telegram_id)
+    user = (await session.execute(stmt)).scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+
+    token = create_jwt(telegram_id=telegram_id, secret=_settings.WEB_JWT_SECRET)
+    response.set_cookie(
+        key="auth_token",
+        value=token,
+        httponly=True,
+        samesite="lax",
+        max_age=86400,
+    )
+    return {"ok": True, "telegram_id": telegram_id}
+
+
 @router.get("/me")
 async def get_me(user: User = Depends(get_current_user)):
     from web.main import _settings

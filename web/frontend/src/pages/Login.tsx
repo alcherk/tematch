@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiFetch } from '../api';
 
@@ -11,6 +11,8 @@ declare global {
 export default function Login() {
   const navigate = useNavigate();
   const widgetRef = useRef<HTMLDivElement>(null);
+  const [devId, setDevId] = useState('');
+  const [error, setError] = useState('');
 
   useEffect(() => {
     window.onTelegramAuth = async (user) => {
@@ -19,7 +21,7 @@ export default function Login() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(user),
       });
-      navigate('/dashboard');
+      window.location.href = '/dashboard'; // full reload to refresh auth state
     };
 
     const script = document.createElement('script');
@@ -32,11 +34,44 @@ export default function Login() {
     widgetRef.current?.appendChild(script);
   }, [navigate]);
 
+  const devLogin = async () => {
+    setError('');
+    try {
+      await apiFetch('/api/auth/dev-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ telegram_id: parseInt(devId) }),
+      });
+      window.location.href = '/dashboard'; // full reload to refresh auth state
+    } catch {
+      setError('Login failed — check telegram_id');
+    }
+  };
+
   return (
     <div className="flex items-center justify-center h-screen bg-gray-50">
       <div className="text-center">
         <h1 className="text-3xl font-bold mb-8">Tematch Dashboard</h1>
         <div ref={widgetRef} />
+        {/* Dev login — only works when WEB_DEV_LOGIN=true on server */}
+        <div className="mt-8 border-t pt-6">
+          <p className="text-sm text-gray-400 mb-2">Dev login</p>
+          <div className="flex gap-2 justify-center">
+            <input
+              value={devId}
+              onChange={(e) => setDevId(e.target.value)}
+              placeholder="Telegram ID"
+              className="border rounded px-3 py-1 text-sm w-40"
+            />
+            <button
+              onClick={devLogin}
+              className="bg-gray-600 text-white px-4 py-1 rounded text-sm hover:bg-gray-700"
+            >
+              Login
+            </button>
+          </div>
+          {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+        </div>
       </div>
     </div>
   );

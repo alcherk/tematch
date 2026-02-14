@@ -39,5 +39,6 @@ class Settings(BaseSettings):
     ADMIN_TELEGRAM_ID: int = 0
     WEB_JWT_SECRET: str = ""
     WEB_PORT: int = 8080
+    WEB_DEV_LOGIN: bool = False
 
     model_config = {"env_file": ".env", "extra": "ignore"}
