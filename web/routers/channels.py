@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -37,6 +37,96 @@ async def list_channels(
         }
         for r in rows
     ]
+
+
+@router.get("/{channel_id}/messages")
+async def channel_messages(
+    channel_id: int,
+    page: int = Query(1, ge=1),
+    per_page: int = Query(50, ge=1, le=100),
+    session: AsyncSession = Depends(get_session),
+    user: User = Depends(get_current_user),
+):
+    # Verify subscription
+    sub_stmt = select(UserChannel).where(
+        UserChannel.user_id == user.id,
+        UserChannel.channel_id == channel_id,
+    )
+    sub = (await session.execute(sub_stmt)).scalar_one_or_none()
+    if not sub:
+        raise HTTPException(status_code=404, detail="Channel not in subscriptions")
+
+    # Get channel info
+    ch = (await session.execute(
+        select(Channel).where(Channel.id == channel_id)
+    )).scalar_one_or_none()
+    if not ch:
+        raise HTTPException(status_code=404, detail="Channel not found")
+
+    # Total count
+    count_stmt = select(func.count(Message.id)).where(Message.channel_id == channel_id)
+    total = (await session.execute(count_stmt)).scalar_one()
+
+    # Paginated messages with optional relevance
+    offset = (page - 1) * per_page
+
+    if user.interests_embedding is not None:
+        stmt = (
+            select(
+                Message.id,
+                Message.text,
+                Message.date,
+                Message.has_media,
+                (Message.embedding.isnot(None)).label("has_embedding"),
+                (1 - Message.embedding.cosine_distance(user.interests_embedding)).label(
+                    "relevance"
+                ),
+            )
+            .where(Message.channel_id == channel_id)
+            .order_by(Message.date.desc())
+            .offset(offset)
+            .limit(per_page)
+        )
+    else:
+        stmt = (
+            select(
+                Message.id,
+                Message.text,
+                Message.date,
+                Message.has_media,
+                (Message.embedding.isnot(None)).label("has_embedding"),
+            )
+            .where(Message.channel_id == channel_id)
+            .order_by(Message.date.desc())
+            .offset(offset)
+            .limit(per_page)
+        )
+
+    rows = (await session.execute(stmt)).all()
+
+    return {
+        "channel": {
+            "id": ch.id,
+            "title": ch.title or ch.username,
+            "username": ch.username,
+        },
+        "messages": [
+            {
+                "id": r.id,
+                "text": r.text[:200] if r.text else "",
+                "date": r.date.isoformat() if r.date else None,
+                "has_embedding": r.has_embedding,
+                "relevance": round(r.relevance, 3)
+                if hasattr(r, "relevance") and r.relevance is not None
+                else None,
+                "has_media": r.has_media,
+            }
+            for r in rows
+        ],
+        "total": total,
+        "page": page,
+        "per_page": per_page,
+    }
 
 
 @router.delete("/{channel_id}")
