@@ -33,5 +33,16 @@ services:
         condition: service_healthy
     env_file: .env
 
+  web:
+    build:
+      context: .
+      dockerfile: web/Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file: .env
+
 volumes:
   pgdata:

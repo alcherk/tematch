@@ -1,8 +1,11 @@
 import secrets
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from starlette.responses import FileResponse
 
 from core.config import Settings
 from core.db import create_engine, create_session_factory
@@ -59,3 +62,18 @@ app.include_router(users_router.router)
 @app.get("/api/health")
 async def health():
     return {"status": "ok"}
+
+
+# --- Static file serving (must be AFTER all API routes) ---
+
+_frontend_dir = Path(__file__).parent / "frontend" / "dist"
+
+if _frontend_dir.exists():
+    app.mount("/assets", StaticFiles(directory=_frontend_dir / "assets"), name="assets")
+
+    @app.get("/{path:path}")
+    async def serve_spa(path: str):
+        file = _frontend_dir / path
+        if file.exists() and file.is_file():
+            return FileResponse(file)
+        return FileResponse(_frontend_dir / "index.html")
