@@ -66,6 +66,7 @@ async def main():
                 embedding_buffer=embedding_buffer,
                 reply_to_msg_id=reply_to_msg_id,
                 has_media=event.media is not None,
+                entities=event.message.entities,
             )
 
         if embedding_buffer.should_flush:

@@ -94,6 +94,7 @@ async def resync_channels(
                     embedding_buffer=embedding_buffer,
                     reply_to_msg_id=reply_to_msg_id,
                     has_media=msg.media is not None,
+                    entities=msg.entities,
                 )
             count += 1
 

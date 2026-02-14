@@ -1,8 +1,10 @@
 import logging
 from datetime import datetime
+from typing import Optional
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from telethon.extensions.html import unparse as html_unparse
 
 from core.content_hash import compute_content_hash
 from core.models import Channel, Message
@@ -19,9 +21,18 @@ async def handle_new_message(
     embedding_buffer=None,
     reply_to_msg_id=None,
     has_media: bool = False,
+    entities=None,
 ):
     if not text or len(text.strip()) < 20:
         return
+
+    # Compute HTML from Telegram entities
+    text_html: Optional[str] = None
+    if entities:
+        try:
+            text_html = html_unparse(text, entities)
+        except Exception:
+            logger.debug("Failed to unparse entities, skipping HTML")
 
     # Find channel in DB
     stmt = select(Channel).where(Channel.telegram_id == channel_telegram_id)
@@ -37,6 +48,15 @@ async def handle_new_message(
     )
     exists = (await session.execute(exists_stmt)).scalar_one_or_none()
     if exists:
+        if text_html:
+            backfill_stmt = select(Message).where(
+                Message.channel_id == channel.id,
+                Message.telegram_msg_id == message_id,
+            )
+            msg_obj = (await session.execute(backfill_stmt)).scalar_one_or_none()
+            if msg_obj and not msg_obj.text_html:
+                msg_obj.text_html = text_html
+                await session.commit()
         return
 
     content_hash = compute_content_hash(text)
@@ -48,6 +68,7 @@ async def handle_new_message(
         channel_id=channel.id,
         telegram_msg_id=message_id,
         text=text,
+        text_html=text_html,
         date=naive_date,
         content_hash=content_hash,
         reply_to_msg_id=reply_to_msg_id,
