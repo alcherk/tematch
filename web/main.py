@@ -8,6 +8,9 @@ from core.config import Settings
 from core.db import create_engine, create_session_factory
 from web.routers import admin as admin_router
 from web.routers import auth as auth_router
+from web.routers import channels as channels_router
+from web.routers import digests as digests_router
+from web.routers import users as users_router
 
 _settings: Settings = None  # type: ignore[assignment]
 _session_factory = None
@@ -48,6 +51,9 @@ app.add_middleware(
 
 app.include_router(admin_router.router)
 app.include_router(auth_router.router)
+app.include_router(channels_router.router)
+app.include_router(digests_router.router)
+app.include_router(users_router.router)
 
 
 @app.get("/api/health")
