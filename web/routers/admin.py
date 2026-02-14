@@ -201,3 +201,33 @@ async def admin_users(
             }
         )
     return result
+
+
+@router.get("/recommendations")
+async def admin_recommendations(
+    session: AsyncSession = Depends(get_session),
+    _admin: User = Depends(require_admin),
+):
+    """Last 100 delivered recommendations across all users."""
+    stmt = (
+        select(Recommendation, Message.text, User.telegram_id, Channel.title, Channel.username)
+        .join(Message, Message.id == Recommendation.message_id)
+        .join(User, User.id == Recommendation.user_id)
+        .join(Channel, Channel.id == Message.channel_id)
+        .where(Recommendation.delivered.is_(True))
+        .order_by(Recommendation.created_at.desc())
+        .limit(100)
+    )
+    rows = (await session.execute(stmt)).all()
+    return [
+        {
+            "id": r.Recommendation.id,
+            "score": r.Recommendation.score,
+            "feedback": r.Recommendation.feedback,
+            "created_at": r.Recommendation.created_at.isoformat(),
+            "text_preview": r.text[:200] if r.text else "",
+            "user_telegram_id": r.telegram_id,
+            "channel_title": r.title or r.username or "—",
+        }
+        for r in rows
+    ]
