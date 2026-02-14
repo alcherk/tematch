@@ -28,6 +28,7 @@ async def main():
             if app_settings.LLM_PROVIDER == "claude"
             else app_settings.OPENAI_API_KEY
         ),
+        model=app_settings.LLM_MODEL,
     )
     embedding_service = EmbeddingService(
         api_key=app_settings.OPENAI_API_KEY,

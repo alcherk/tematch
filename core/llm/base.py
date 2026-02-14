@@ -20,14 +20,14 @@ class LLMProvider(ABC):
         ...
 
 
-def create_llm_provider(provider: str, api_key: str) -> LLMProvider:
+def create_llm_provider(provider: str, api_key: str, model: str = "") -> LLMProvider:
     if provider == "openai":
         from core.llm.openai_provider import OpenAIProvider
 
-        return OpenAIProvider(api_key=api_key)
+        return OpenAIProvider(api_key=api_key, model=model or "gpt-4o-mini")
     elif provider == "claude":
         from core.llm.claude_provider import ClaudeProvider
 
-        return ClaudeProvider(api_key=api_key)
+        return ClaudeProvider(api_key=api_key, model=model or "claude-sonnet-4-5-20250929")
     else:
         raise ValueError(f"Unknown LLM provider: {provider}")

@@ -13,6 +13,7 @@ class Settings(BaseSettings):
 
     # LLM
     LLM_PROVIDER: str = "openai"
+    LLM_MODEL: str = ""
     ANTHROPIC_API_KEY: str = ""
     OPENAI_API_KEY: str = ""
 
