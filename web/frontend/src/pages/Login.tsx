@@ -11,7 +11,7 @@ declare global {
 export default function Login() {
   const navigate = useNavigate();
   const widgetRef = useRef<HTMLDivElement>(null);
-  const [devId, setDevId] = useState('');
+  const [devId, setDevId] = useState(() => localStorage.getItem('devLoginId') || '');
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -42,6 +42,7 @@ export default function Login() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ telegram_id: parseInt(devId) }),
       });
+      localStorage.setItem('devLoginId', devId);
       window.location.href = '/dashboard';
     } catch {
       setError('Login failed — check telegram_id');
