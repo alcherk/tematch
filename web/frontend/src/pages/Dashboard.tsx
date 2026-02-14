@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { apiFetch } from '../api';
+import { apiFetch, voteFeedback } from '../api';
 import ChannelList from '../components/ChannelList';
 
 const SCHEDULE_PRESETS = [
@@ -41,6 +41,13 @@ export default function Dashboard() {
     });
     setSaving(false);
     await loadData();
+  };
+
+  const handleVote = async (recId: number, feedback: 'like' | 'dislike') => {
+    setDigests((prev) =>
+      prev.map((d) => (d.id === recId ? { ...d, feedback } : d))
+    );
+    await voteFeedback(recId, feedback);
   };
 
   if (!profile) return (
@@ -131,11 +138,32 @@ export default function Dashboard() {
                   <span className="cyber-mono" style={{ color: 'var(--text-muted)' }}>
                     {new Date(d.created_at).toLocaleString()}
                   </span>
-                  {d.feedback && (
-                    <span style={{ color: d.feedback === 'like' ? 'var(--neon-green)' : 'var(--neon-red)' }}>
-                      {d.feedback === 'like' ? '▲' : '▼'}
-                    </span>
-                  )}
+                  <span className="flex gap-1">
+                    <button
+                      onClick={() => handleVote(d.id, 'like')}
+                      className="cyber-btn"
+                      style={{
+                        padding: '0.15rem 0.4rem',
+                        fontSize: '0.75rem',
+                        color: d.feedback === 'like' ? 'var(--neon-green)' : 'var(--text-muted)',
+                        borderColor: d.feedback === 'like' ? 'var(--neon-green)' : undefined,
+                      }}
+                    >
+                      👍
+                    </button>
+                    <button
+                      onClick={() => handleVote(d.id, 'dislike')}
+                      className="cyber-btn"
+                      style={{
+                        padding: '0.15rem 0.4rem',
+                        fontSize: '0.75rem',
+                        color: d.feedback === 'dislike' ? 'var(--neon-red)' : 'var(--text-muted)',
+                        borderColor: d.feedback === 'dislike' ? 'var(--neon-red)' : undefined,
+                      }}
+                    >
+                      👎
+                    </button>
+                  </span>
                 </div>
                 <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.4rem' }}>
                   {d.text_preview}

@@ -14,3 +14,11 @@ export async function apiFetch<T>(path: string, options?: RequestInit): Promise<
   if (!resp.ok) throw new Error(`API error: ${resp.status}`);
   return resp.json();
 }
+
+export async function voteFeedback(recId: number, feedback: 'like' | 'dislike') {
+  return apiFetch<{ ok: boolean; feedback: string }>(`/api/users/me/digests/${recId}/feedback`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ feedback }),
+  });
+}
