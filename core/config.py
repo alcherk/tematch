@@ -35,4 +35,9 @@ class Settings(BaseSettings):
     RESYNC_MAX_HOURS: int = 72
     RESYNC_BATCH_SIZE: int = 100
 
+    # Web Dashboard
+    ADMIN_TELEGRAM_ID: int = 0
+    WEB_JWT_SECRET: str = ""
+    WEB_PORT: int = 8080
+
     model_config = {"env_file": ".env", "extra": "ignore"}
