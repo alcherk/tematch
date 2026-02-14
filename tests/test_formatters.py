@@ -262,10 +262,10 @@ def _make_digest_item(
 def test_format_digest_page_basic():
     items = [_make_digest_item(index=1), _make_digest_item(index=2, rec_id=101)]
     result = format_digest_page(items)
-    assert "<b>1.</b>" in result
-    assert "<b>2.</b>" in result
+    assert "📌 1" in result
+    assert "📌 2" in result
     assert "Test Channel" in result
-    assert "0.85" in result
+    assert "85%" in result
 
 
 def test_format_digest_page_html_tags():
@@ -290,7 +290,7 @@ def test_format_digest_page_with_link():
 def test_format_digest_page_media_indicator():
     items = [_make_digest_item(username="mychan", has_media=True)]
     result = format_digest_page(items)
-    assert "🔗🖼" in result
+    assert "🖼" in result
 
 
 def test_format_digest_page_no_media_indicator():
@@ -310,14 +310,14 @@ def test_format_digest_page_with_thread_parents():
     thread = {"parents": [_make_msg(text="Parent context")], "children": []}
     items = [_make_digest_item(thread=thread)]
     result = format_digest_page(items)
-    assert "Parent context" in result
+    assert "↩️ 1" in result
 
 
 def test_format_digest_page_with_thread_children():
     thread = {"parents": [], "children": [_make_msg(text="Child reply")]}
     items = [_make_digest_item(thread=thread)]
     result = format_digest_page(items)
-    assert "Child reply" in result
+    assert "💬 1" in result
 
 
 def test_format_digest_page_divider_between_items():
@@ -326,13 +326,13 @@ def test_format_digest_page_divider_between_items():
         _make_digest_item(index=2, rec_id=101),
     ]
     result = format_digest_page(items)
-    assert "———" in result
+    assert "━" in result
 
 
 def test_format_digest_page_truncates_long_body():
     items = [_make_digest_item(text="X" * 1000)]
     result = format_digest_page(items)
-    assert "X" * 601 not in result
+    assert "X" * 801 not in result
 
 
 # --- split_digest_pages ---

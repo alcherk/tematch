@@ -10,9 +10,10 @@ from core.models import Channel, Message
 
 MAX_TEXT_LEN = 4000
 MAX_THREAD_MSG_LEN = 300
-MAX_BODY_LEN = 600
+MAX_BODY_LEN = 800
 MAX_THREAD_SNIPPET_LEN = 200
 MAX_PAGE_CHARS = 4000
+EXPANDABLE_THRESHOLD = 150
 
 
 def generate_message_link(
@@ -48,50 +49,50 @@ class DigestItem:
 def _format_single_item(item: DigestItem) -> str:
     parts: list[str] = []
 
-    # Header: number + channel + score
-    header = f"<b>{item.index}.</b> {html_escape(item.channel.title or '')} (score: {item.score:.2f})"
+    # Header: emoji + index + bold channel + percentage score
+    score_pct = round(item.score * 100)
+    header = f"📌 {item.index} · <b>{html_escape(item.channel.title or '')}</b> · ⭐ {score_pct}%"
     parts.append(header)
 
-    # Link (with image indicator when media is present)
+    # Link (with media indicator)
     link = generate_message_link(item.channel, item.msg.telegram_msg_id)
     if link:
         has_media = getattr(item.msg, "has_media", False)
-        icon = "🔗🖼" if has_media else "🔗"
-        parts.append(f'<a href="{link}">{icon} Источник</a>')
+        link_text = f'<a href="{link}">🔗 Источник</a>'
+        if has_media:
+            link_text += " 🖼"
+        parts.append(link_text)
 
-    # Thread parents (context before)
-    if item.thread and item.thread.get("parents"):
-        parts.append("↩️ <i>Контекст:</i>")
-        for parent in item.thread["parents"]:
-            p_html = getattr(parent, "text_html", None)
-            snippet = _truncate(p_html or parent.text, MAX_THREAD_SNIPPET_LEN)
-            if not p_html:
-                snippet = html_escape(snippet)
-            parts.append(f"  └ {snippet}")
-
-    # Body
+    # Body — use text_html when available, expandable when long
     body_html = getattr(item.msg, "text_html", None)
     if body_html:
-        parts.append(_truncate(body_html, MAX_BODY_LEN))
+        body = _truncate(body_html, MAX_BODY_LEN)
     else:
-        parts.append(html_escape(_truncate(item.msg.text, MAX_BODY_LEN)))
+        body = html_escape(_truncate(item.msg.text, MAX_BODY_LEN))
 
-    # Thread children (replies after)
-    if item.thread and item.thread.get("children"):
-        parts.append("💬 <i>Ответы:</i>")
-        for child in item.thread["children"]:
-            c_html = getattr(child, "text_html", None)
-            snippet = _truncate(c_html or child.text, MAX_THREAD_SNIPPET_LEN)
-            if not c_html:
-                snippet = html_escape(snippet)
-            parts.append(f"  └ {snippet}")
+    if len(item.msg.text) > EXPANDABLE_THRESHOLD:
+        parts.append(f"<blockquote expandable>{body}</blockquote>")
+    else:
+        parts.append(body)
+
+    # Thread summary — counts only, no inline snippets
+    if item.thread:
+        parent_count = len(item.thread.get("parents", []))
+        child_count = len(item.thread.get("children", []))
+        thread_parts: list[str] = []
+        if parent_count:
+            thread_parts.append(f"↩️ {parent_count} контекстных")
+        if child_count:
+            thread_parts.append(f"💬 {child_count} ответ.")
+        if thread_parts:
+            parts.append(" · ".join(thread_parts))
 
     return "\n".join(parts)
 
 
 def format_digest_page(items: list[DigestItem]) -> str:
     sections = [_format_single_item(item) for item in items]
-    return "\n\n———\n\n".join(sections)
+    return "\n\n━━━━━━━━━━━━━━━━━━━\n\n".join(sections)
 
 
 def split_digest_pages(items: list[DigestItem]) -> list[list[DigestItem]]:
@@ -102,7 +103,7 @@ def split_digest_pages(items: list[DigestItem]) -> list[list[DigestItem]]:
     for item in items:
         item_text = _format_single_item(item)
         # Account for divider between items
-        divider_len = len("\n\n———\n\n") if current_page else 0
+        divider_len = len("\n\n━━━━━━━━━━━━━━━━━━━\n\n") if current_page else 0
         new_len = current_len + divider_len + len(item_text)
 
         if current_page and new_len > MAX_PAGE_CHARS:
