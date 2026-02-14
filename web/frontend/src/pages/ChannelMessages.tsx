@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import DOMPurify from 'dompurify';
 import { apiFetch } from '../api';
 
 interface MsgRow {
   id: number;
   text: string;
+  text_html: string | null;
   date: string | null;
   has_embedding: boolean;
   relevance: number | null;
@@ -91,7 +93,11 @@ export default function ChannelMessages() {
                     ? { whiteSpace: 'pre-wrap', wordBreak: 'break-word' }
                     : { maxWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }),
                 }}>
-                  {m.text}
+                  {m.text_html ? (
+                    <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(m.text_html) }} />
+                  ) : (
+                    m.text
+                  )}
                 </td>
                 <td className="cyber-mono" style={{ fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
                   {m.date ? new Date(m.date).toLocaleString() : '\u2014'}
