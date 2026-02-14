@@ -49,6 +49,7 @@ def test_link_no_identifiers():
 def _make_msg(text="Hello world", telegram_msg_id=10):
     msg = MagicMock()
     msg.text = text
+    msg.text_html = None
     msg.telegram_msg_id = telegram_msg_id
     return msg
 
@@ -115,6 +116,7 @@ def test_format_truncates_thread_context():
 def _make_db_msg(text="msg", telegram_msg_id=1, channel_id=10, reply_to_msg_id=None):
     msg = MagicMock()
     msg.text = text
+    msg.text_html = None
     msg.telegram_msg_id = telegram_msg_id
     msg.channel_id = channel_id
     msg.reply_to_msg_id = reply_to_msg_id
@@ -398,3 +400,52 @@ def test_digest_keyboard_single_item():
     kb = digest_keyboard(items)
     assert len(kb.inline_keyboard) == 1
     assert len(kb.inline_keyboard[0]) == 2
+
+
+# --- text_html support ---
+
+
+def _make_msg_with_html(text="Hello world", text_html=None, telegram_msg_id=10):
+    msg = MagicMock()
+    msg.text = text
+    msg.text_html = text_html
+    msg.telegram_msg_id = telegram_msg_id
+    msg.has_media = False
+    return msg
+
+
+def test_format_digest_uses_text_html_when_available():
+    """When msg.text_html is set, digest should use it directly (no escape)."""
+    msg = _make_msg_with_html(
+        text="Hello bold",
+        text_html="Hello <strong>bold</strong>",
+    )
+    ch = _make_channel(username="chan")
+    ch.title = "Test Channel"
+    item = DigestItem(index=1, msg=msg, channel=ch, score=0.8, rec_id=100)
+    result = format_digest_page([item])
+    assert "<strong>bold</strong>" in result
+
+
+def test_format_digest_falls_back_to_escaped_text():
+    """When msg.text_html is None, digest should escape plain text."""
+    msg = _make_msg_with_html(
+        text="Use <b>tag</b>",
+        text_html=None,
+    )
+    ch = _make_channel(username="chan")
+    ch.title = "Test Channel"
+    item = DigestItem(index=1, msg=msg, channel=ch, score=0.8, rec_id=100)
+    result = format_digest_page([item])
+    assert "&lt;b&gt;" in result
+
+
+def test_format_recommendation_uses_text_html():
+    """format_recommendation should use text_html when available."""
+    ch = _make_channel(username="chan")
+    msg = _make_msg_with_html(
+        text="Plain text",
+        text_html="<em>Italic</em> text",
+    )
+    result = format_recommendation(msg, ch, score=0.9, thread_messages=None)
+    assert "<em>Italic</em>" in result

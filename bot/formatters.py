@@ -63,16 +63,28 @@ def _format_single_item(item: DigestItem) -> str:
     if item.thread and item.thread.get("parents"):
         parts.append("↩️ <i>Контекст:</i>")
         for parent in item.thread["parents"]:
-            parts.append(f"  └ {html_escape(_truncate(parent.text, MAX_THREAD_SNIPPET_LEN))}")
+            p_html = getattr(parent, "text_html", None)
+            snippet = _truncate(p_html or parent.text, MAX_THREAD_SNIPPET_LEN)
+            if not p_html:
+                snippet = html_escape(snippet)
+            parts.append(f"  └ {snippet}")
 
     # Body
-    parts.append(html_escape(_truncate(item.msg.text, MAX_BODY_LEN)))
+    body_html = getattr(item.msg, "text_html", None)
+    if body_html:
+        parts.append(_truncate(body_html, MAX_BODY_LEN))
+    else:
+        parts.append(html_escape(_truncate(item.msg.text, MAX_BODY_LEN)))
 
     # Thread children (replies after)
     if item.thread and item.thread.get("children"):
         parts.append("💬 <i>Ответы:</i>")
         for child in item.thread["children"]:
-            parts.append(f"  └ {html_escape(_truncate(child.text, MAX_THREAD_SNIPPET_LEN))}")
+            c_html = getattr(child, "text_html", None)
+            snippet = _truncate(c_html or child.text, MAX_THREAD_SNIPPET_LEN)
+            if not c_html:
+                snippet = html_escape(snippet)
+            parts.append(f"  └ {snippet}")
 
     return "\n".join(parts)
 
@@ -129,7 +141,11 @@ def format_recommendation(
             parts.append(f"  └ {_truncate(parent.text, MAX_THREAD_MSG_LEN)}")
 
     # Main message text
-    parts.append(f"\n{_truncate(msg.text, MAX_TEXT_LEN)}")
+    msg_html = getattr(msg, "text_html", None)
+    if msg_html:
+        parts.append(f"\n{_truncate(msg_html, MAX_TEXT_LEN)}")
+    else:
+        parts.append(f"\n{_truncate(msg.text, MAX_TEXT_LEN)}")
 
     # Thread children (replies after main message)
     if thread_messages and thread_messages.get("children"):
