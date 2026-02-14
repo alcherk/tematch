@@ -12,7 +12,7 @@ def _admin_cookie():
     """Create a valid JWT cookie for the admin user."""
     from web.auth import create_jwt
 
-    return {"auth_token": create_jwt(telegram_id=999, secret="test")}
+    return {"auth_token": create_jwt(telegram_id=999, secret="test-secret-that-is-32-bytes-ok!")}
 
 
 @pytest.fixture(autouse=True)
@@ -20,7 +20,7 @@ def _mock_settings():
     """Override settings for tests."""
     with patch("web.main._settings") as mock:
         mock.ADMIN_TELEGRAM_ID = 999
-        mock.WEB_JWT_SECRET = "test"
+        mock.WEB_JWT_SECRET = "test-secret-that-is-32-bytes-ok!"
         mock.DAILY_TOKEN_BUDGET = 500_000
         yield mock
 

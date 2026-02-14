@@ -29,12 +29,12 @@ async def test_admin_stats_with_real_db(session, session_factory):
 
     wm._settings = MagicMock()
     wm._settings.ADMIN_TELEGRAM_ID = 999_999
-    wm._settings.WEB_JWT_SECRET = "test"
+    wm._settings.WEB_JWT_SECRET = "test-secret-that-is-32-bytes-ok!"
     wm._settings.DAILY_TOKEN_BUDGET = 500_000
 
     app.dependency_overrides[deps.get_session] = _get_session
 
-    token = create_jwt(telegram_id=999_999, secret="test")
+    token = create_jwt(telegram_id=999_999, secret="test-secret-that-is-32-bytes-ok!")
     transport = ASGITransport(app=app)
     async with AsyncClient(
         transport=transport,

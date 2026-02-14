@@ -8,6 +8,7 @@ from core.llm_usage import get_daily_token_total, log_usage
 @pytest.mark.asyncio
 async def test_log_usage():
     mock_session = AsyncMock()
+    mock_session.add = MagicMock()  # add() is synchronous in SQLAlchemy
     await log_usage(
         session=mock_session,
         provider="openai",

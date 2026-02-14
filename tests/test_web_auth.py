@@ -47,14 +47,14 @@ def test_verify_telegram_login_expired():
 
 
 def test_jwt_roundtrip():
-    secret = "testsecret"
+    secret = "test-secret-that-is-32-bytes-ok!"
     token = create_jwt(telegram_id=42, secret=secret)
     payload = decode_jwt(token, secret=secret)
     assert payload["telegram_id"] == 42
 
 
 def test_jwt_expired():
-    secret = "testsecret"
+    secret = "test-secret-that-is-32-bytes-ok!"
     token = create_jwt(telegram_id=42, secret=secret, expires_hours=-1)
     payload = decode_jwt(token, secret=secret)
     assert payload is None
