@@ -1,8 +1,12 @@
 import json
+import logging
+import re
 
 from openai import AsyncOpenAI
 
 from core.llm.base import LLMProvider, LLMResult
+
+logger = logging.getLogger(__name__)
 
 RANK_PROMPT = """You are a content recommendation engine.
 Given a user's interests and a list of messages, rank the messages by relevance.
@@ -35,8 +39,16 @@ class OpenAIProvider(LLMProvider):
             temperature=0,
         )
         usage = response.usage
+        content = response.choices[0].message.content or ""
+        # Strip markdown fences if present
+        match = re.search(r"\[.*\]", content, re.DOTALL)
+        if match:
+            ranked = json.loads(match.group())
+        else:
+            logger.error("LLM returned unparseable response: %s", content[:500])
+            ranked = []
         return LLMResult(
-            ranked=json.loads(response.choices[0].message.content),
+            ranked=ranked,
             tokens_in=usage.prompt_tokens if usage else 0,
             tokens_out=usage.completion_tokens if usage else 0,
         )

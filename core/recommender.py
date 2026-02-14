@@ -55,7 +55,7 @@ class Recommender:
         interests_embedding: Optional[list[float]] = None,
     ) -> list[dict]:
         # Stage 1: pgvector similarity search
-        if interests_embedding:
+        if interests_embedding is not None:
             query_vector = interests_embedding
         else:
             embed_result = await self.embedding_service.embed_text(interests)

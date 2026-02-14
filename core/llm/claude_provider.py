@@ -1,9 +1,13 @@
 import json
+import logging
+import re
 
 from anthropic import AsyncAnthropic
 
 from core.llm.base import LLMProvider, LLMResult
 from core.llm.openai_provider import RANK_PROMPT
+
+logger = logging.getLogger(__name__)
 
 
 class ClaudeProvider(LLMProvider):
@@ -23,8 +27,15 @@ class ClaudeProvider(LLMProvider):
             max_tokens=1024,
             messages=[{"role": "user", "content": prompt}],
         )
+        content = response.content[0].text or ""
+        match = re.search(r"\[.*\]", content, re.DOTALL)
+        if match:
+            ranked = json.loads(match.group())
+        else:
+            logger.error("LLM returned unparseable response: %s", content[:500])
+            ranked = []
         return LLMResult(
-            ranked=json.loads(response.content[0].text),
+            ranked=ranked,
             tokens_in=response.usage.input_tokens,
             tokens_out=response.usage.output_tokens,
         )

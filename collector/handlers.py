@@ -39,11 +39,14 @@ async def handle_new_message(
 
     content_hash = compute_content_hash(text)
 
+    # Strip timezone — DB column is TIMESTAMP WITHOUT TIME ZONE
+    naive_date = date.replace(tzinfo=None) if date and date.tzinfo else date
+
     msg = Message(
         channel_id=channel.id,
         telegram_msg_id=message_id,
         text=text,
-        date=date,
+        date=naive_date,
         content_hash=content_hash,
     )
     session.add(msg)

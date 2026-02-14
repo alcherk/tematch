@@ -41,26 +41,51 @@ async def resync_channels(
 
     for channel in channels:
         offset_date = compute_resync_offset(channel.last_fetched_at, max_hours)
+
+        # Resolve entity: use username if telegram_id is unknown
+        entity = channel.username if channel.telegram_id == 0 else channel.telegram_id
+
         logger.info(
-            "Resync channel %s (id=%d) from %s",
+            "Resync channel %s (entity=%s) from %s",
             channel.title or channel.username,
-            channel.telegram_id,
+            entity,
             offset_date,
         )
 
+        # Resolve real telegram_id if unknown
+        if channel.telegram_id == 0 and channel.username:
+            try:
+                tg_entity = await client.get_entity(channel.username)
+                async with session_factory() as session:
+                    from sqlalchemy import update
+                    await session.execute(
+                        update(Channel)
+                        .where(Channel.id == channel.id)
+                        .values(telegram_id=tg_entity.id)
+                    )
+                    await session.commit()
+                entity = tg_entity.id
+                logger.info("Resolved %s -> telegram_id=%d", channel.username, tg_entity.id)
+            except Exception:
+                logger.warning("Could not resolve entity for %s", channel.username)
+
         count = 0
         async for msg in client.iter_messages(
-            channel.telegram_id,
-            offset_date=offset_date,
+            entity,
             limit=batch_size,
         ):
+            # Skip messages older than our window
+            msg_date = msg.date.replace(tzinfo=None) if msg.date and msg.date.tzinfo else msg.date
+            if msg_date and msg_date < offset_date:
+                break
+
             if not msg.text or len(msg.text.strip()) < 20:
                 continue
 
             async with session_factory() as session:
                 await handle_new_message(
                     session=session,
-                    channel_telegram_id=channel.telegram_id,
+                    channel_telegram_id=entity if isinstance(entity, int) and entity != 0 else channel.telegram_id,
                     message_id=msg.id,
                     text=msg.text,
                     date=msg.date,
