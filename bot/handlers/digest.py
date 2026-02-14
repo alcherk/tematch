@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from typing import Optional
 
 from aiogram import F, Router
-from aiogram.filters import Command
+from aiogram.filters import Command, CommandObject
 from aiogram.types import CallbackQuery
 from aiogram.types import Message as TgMessage
 from sqlalchemy import func, select
@@ -47,7 +47,9 @@ async def _resolve_channel(
         .join(UserChannel)
         .where(
             UserChannel.user_id == user_id,
-            (Channel.username == arg) | (Channel.title == arg),
+            (Channel.username == arg)
+            | (Channel.title == arg)
+            | (Channel.title == f"channel_{arg}"),
         )
     )
     ch = (await session.execute(stmt)).scalar_one_or_none()
@@ -75,8 +77,8 @@ async def _resolve_channel(
 
 @router.message(Command("digest"))
 async def cmd_digest(
-    message: TgMessage, session: AsyncSession, recommender: Recommender,
-    settings: Settings,
+    message: TgMessage, command: CommandObject, session: AsyncSession,
+    recommender: Recommender, settings: Settings,
 ):
     stmt = select(User).where(User.telegram_id == message.from_user.id)
     user = (await session.execute(stmt)).scalar_one_or_none()
@@ -89,7 +91,7 @@ async def cmd_digest(
         return
 
     # Parse optional channel argument: /digest @channel or /digest title
-    channel_arg = message.text.replace("/digest", "", 1).strip() if message.text else ""
+    channel_arg = (command.args or "").strip()
 
     # Get user's channel IDs
     ch_stmt = select(UserChannel.channel_id).where(UserChannel.user_id == user.id)
