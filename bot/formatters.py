@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Optional
 
 from sqlalchemy import select
@@ -9,6 +10,9 @@ from core.models import Channel, Message
 
 MAX_TEXT_LEN = 4000
 MAX_THREAD_MSG_LEN = 300
+MAX_BODY_LEN = 600
+MAX_THREAD_SNIPPET_LEN = 200
+MAX_PAGE_CHARS = 4000
 
 
 def generate_message_link(
@@ -25,6 +29,80 @@ def _truncate(text: str, limit: int) -> str:
     if len(text) <= limit:
         return text
     return text[: limit - 1] + "…"
+
+
+def html_escape(text: str) -> str:
+    return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+
+@dataclass
+class DigestItem:
+    index: int           # 1-based position
+    msg: Message
+    channel: Channel
+    score: float
+    rec_id: int          # Recommendation ID for voting
+    thread: Optional[dict] = None
+
+
+def _format_single_item(item: DigestItem) -> str:
+    parts: list[str] = []
+
+    # Header: number + channel + score
+    header = f"<b>{item.index}.</b> {html_escape(item.channel.title or '')} (score: {item.score:.2f})"
+    parts.append(header)
+
+    # Link
+    link = generate_message_link(item.channel, item.msg.telegram_msg_id)
+    if link:
+        parts.append(f'<a href="{link}">🔗 Источник</a>')
+
+    # Thread parents (context before)
+    if item.thread and item.thread.get("parents"):
+        parts.append("↩️ <i>Контекст:</i>")
+        for parent in item.thread["parents"]:
+            parts.append(f"  └ {html_escape(_truncate(parent.text, MAX_THREAD_SNIPPET_LEN))}")
+
+    # Body
+    parts.append(html_escape(_truncate(item.msg.text, MAX_BODY_LEN)))
+
+    # Thread children (replies after)
+    if item.thread and item.thread.get("children"):
+        parts.append("💬 <i>Ответы:</i>")
+        for child in item.thread["children"]:
+            parts.append(f"  └ {html_escape(_truncate(child.text, MAX_THREAD_SNIPPET_LEN))}")
+
+    return "\n".join(parts)
+
+
+def format_digest_page(items: list[DigestItem]) -> str:
+    sections = [_format_single_item(item) for item in items]
+    return "\n\n———\n\n".join(sections)
+
+
+def split_digest_pages(items: list[DigestItem]) -> list[list[DigestItem]]:
+    pages: list[list[DigestItem]] = []
+    current_page: list[DigestItem] = []
+    current_len = 0
+
+    for item in items:
+        item_text = _format_single_item(item)
+        # Account for divider between items
+        divider_len = len("\n\n———\n\n") if current_page else 0
+        new_len = current_len + divider_len + len(item_text)
+
+        if current_page and new_len > MAX_PAGE_CHARS:
+            pages.append(current_page)
+            current_page = [item]
+            current_len = len(item_text)
+        else:
+            current_page.append(item)
+            current_len = new_len
+
+    if current_page:
+        pages.append(current_page)
+
+    return pages
 
 
 def format_recommendation(

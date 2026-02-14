@@ -2,7 +2,16 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from bot.formatters import fetch_thread_context, format_recommendation, generate_message_link
+from bot.formatters import (
+    DigestItem,
+    fetch_thread_context,
+    format_digest_page,
+    format_recommendation,
+    generate_message_link,
+    html_escape,
+    split_digest_pages,
+)
+from bot.keyboards import digest_keyboard
 
 # --- generate_message_link ---
 
@@ -203,3 +212,174 @@ async def test_fetch_thread_missing_parent():
 
     result = await fetch_thread_context(session, msg)
     assert result is None
+
+
+# --- html_escape ---
+
+
+def test_html_escape_angle_brackets():
+    assert html_escape("<script>alert('xss')</script>") == "&lt;script&gt;alert('xss')&lt;/script&gt;"
+
+
+def test_html_escape_ampersand():
+    assert html_escape("A & B") == "A &amp; B"
+
+
+def test_html_escape_safe_text():
+    assert html_escape("Hello world") == "Hello world"
+
+
+def test_html_escape_all_special():
+    assert html_escape("<>&") == "&lt;&gt;&amp;"
+
+
+# --- DigestItem + format_digest_page ---
+
+
+def _make_digest_item(
+    index=1,
+    text="Test message",
+    username="chan",
+    telegram_id=None,
+    score=0.85,
+    rec_id=100,
+    telegram_msg_id=10,
+    title="Test Channel",
+    thread=None,
+):
+    msg = _make_msg(text=text, telegram_msg_id=telegram_msg_id)
+    ch = _make_channel(username=username, telegram_id=telegram_id)
+    ch.title = title
+    return DigestItem(
+        index=index, msg=msg, channel=ch, score=score, rec_id=rec_id, thread=thread,
+    )
+
+
+def test_format_digest_page_basic():
+    items = [_make_digest_item(index=1), _make_digest_item(index=2, rec_id=101)]
+    result = format_digest_page(items)
+    assert "<b>1.</b>" in result
+    assert "<b>2.</b>" in result
+    assert "Test Channel" in result
+    assert "0.85" in result
+
+
+def test_format_digest_page_html_tags():
+    items = [_make_digest_item(text="Normal text")]
+    result = format_digest_page(items)
+    assert "<b>" in result
+
+
+def test_format_digest_page_escapes_user_content():
+    items = [_make_digest_item(text="Use <b>tag</b> & more")]
+    result = format_digest_page(items)
+    assert "&lt;b&gt;" in result
+    assert "&amp;" in result
+
+
+def test_format_digest_page_with_link():
+    items = [_make_digest_item(username="mychan", telegram_msg_id=42)]
+    result = format_digest_page(items)
+    assert '<a href="https://t.me/mychan/42">' in result
+
+
+def test_format_digest_page_no_link():
+    items = [_make_digest_item(username=None, telegram_id=None)]
+    result = format_digest_page(items)
+    assert "Источник" not in result
+
+
+def test_format_digest_page_with_thread_parents():
+    thread = {"parents": [_make_msg(text="Parent context")], "children": []}
+    items = [_make_digest_item(thread=thread)]
+    result = format_digest_page(items)
+    assert "Parent context" in result
+
+
+def test_format_digest_page_with_thread_children():
+    thread = {"parents": [], "children": [_make_msg(text="Child reply")]}
+    items = [_make_digest_item(thread=thread)]
+    result = format_digest_page(items)
+    assert "Child reply" in result
+
+
+def test_format_digest_page_divider_between_items():
+    items = [
+        _make_digest_item(index=1, rec_id=100),
+        _make_digest_item(index=2, rec_id=101),
+    ]
+    result = format_digest_page(items)
+    assert "———" in result
+
+
+def test_format_digest_page_truncates_long_body():
+    items = [_make_digest_item(text="X" * 1000)]
+    result = format_digest_page(items)
+    assert "X" * 601 not in result
+
+
+# --- split_digest_pages ---
+
+
+def test_split_pages_short_items_single_page():
+    items = [_make_digest_item(index=i, rec_id=100 + i) for i in range(1, 6)]
+    pages = split_digest_pages(items)
+    assert len(pages) == 1
+    assert len(pages[0]) == 5
+
+
+def test_split_pages_long_items_multiple_pages():
+    # 8 items x ~700 chars each = ~5600, must split into 2+ pages
+    items = [
+        _make_digest_item(index=i, text="Z" * 600, rec_id=100 + i)
+        for i in range(1, 9)
+    ]
+    pages = split_digest_pages(items)
+    assert len(pages) >= 2
+    total = sum(len(p) for p in pages)
+    assert total == 8
+
+
+def test_split_pages_single_item():
+    items = [_make_digest_item()]
+    pages = split_digest_pages(items)
+    assert len(pages) == 1
+    assert len(pages[0]) == 1
+
+
+# --- digest_keyboard ---
+
+
+def test_digest_keyboard_layout_5_items():
+    items = [_make_digest_item(index=i, rec_id=100 + i) for i in range(1, 6)]
+    kb = digest_keyboard(items)
+    rows = kb.inline_keyboard
+    # Row 1: items 1-3 → 6 buttons (3 pairs)
+    assert len(rows[0]) == 6
+    # Row 2: items 4-5 → 4 buttons (2 pairs)
+    assert len(rows[1]) == 4
+
+
+def test_digest_keyboard_callback_data():
+    items = [_make_digest_item(index=1, rec_id=42)]
+    kb = digest_keyboard(items)
+    buttons = kb.inline_keyboard[0]
+    assert buttons[0].callback_data == "fb:like:42"
+    assert buttons[1].callback_data == "fb:dislike:42"
+
+
+def test_digest_keyboard_button_labels():
+    items = [_make_digest_item(index=3, rec_id=99)]
+    kb = digest_keyboard(items)
+    buttons = kb.inline_keyboard[0]
+    assert "3" in buttons[0].text
+    assert "👍" in buttons[0].text
+    assert "3" in buttons[1].text
+    assert "👎" in buttons[1].text
+
+
+def test_digest_keyboard_single_item():
+    items = [_make_digest_item(index=1, rec_id=50)]
+    kb = digest_keyboard(items)
+    assert len(kb.inline_keyboard) == 1
+    assert len(kb.inline_keyboard[0]) == 2

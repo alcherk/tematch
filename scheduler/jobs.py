@@ -6,8 +6,13 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.orm import selectinload
 
-from bot.formatters import fetch_thread_context, format_recommendation
-from bot.keyboards import feedback_keyboard
+from bot.formatters import (
+    DigestItem,
+    fetch_thread_context,
+    format_digest_page,
+    split_digest_pages,
+)
+from bot.keyboards import digest_keyboard
 from core.models import Message, Recommendation, UserChannel
 from core.recommender import Recommender
 
@@ -57,6 +62,9 @@ async def send_digest_to_user(
 
         await bot.send_message(telegram_id, "📬 Твой дайджест готов!")
 
+        # Collect all recommendations and build DigestItems
+        digest_items: list = []
+        idx = 1
         for item in ranked:
             stmt = (
                 select(Message)
@@ -76,10 +84,20 @@ async def send_digest_to_user(
                 delivered=True,
             )
             session.add(rec)
-            await session.commit()
-            await session.refresh(rec)
+            await session.flush()
 
-            text = format_recommendation(msg, msg.channel, item["score"], thread)
+            digest_items.append(DigestItem(
+                index=idx, msg=msg, channel=msg.channel,
+                score=item["score"], rec_id=rec.id, thread=thread,
+            ))
+            idx += 1
+
+        await session.commit()
+
+        # Send paginated digest
+        for page_items in split_digest_pages(digest_items):
+            text = format_digest_page(page_items)
             await bot.send_message(
-                telegram_id, text, reply_markup=feedback_keyboard(rec.id)
+                telegram_id, text,
+                parse_mode="HTML", reply_markup=digest_keyboard(page_items),
             )

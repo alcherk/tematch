@@ -8,8 +8,13 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from bot.formatters import fetch_thread_context, format_recommendation
-from bot.keyboards import feedback_keyboard
+from bot.formatters import (
+    DigestItem,
+    fetch_thread_context,
+    format_digest_page,
+    split_digest_pages,
+)
+from bot.keyboards import digest_keyboard
 from core.config import Settings
 from core.models import Message as MsgModel
 from core.models import Recommendation, User, UserChannel
@@ -98,6 +103,9 @@ async def cmd_digest(
         )
         return
 
+    # Collect all recommendations and build DigestItems
+    digest_items: list = []
+    idx = 1
     for item in ranked:
         stmt = (
             select(MsgModel)
@@ -114,11 +122,22 @@ async def cmd_digest(
             user_id=user.id, message_id=msg.id, score=item["score"], delivered=True
         )
         session.add(rec)
-        await session.commit()
-        await session.refresh(rec)
+        await session.flush()
 
-        text = format_recommendation(msg, msg.channel, item["score"], thread)
-        await message.answer(text, reply_markup=feedback_keyboard(rec.id))
+        digest_items.append(DigestItem(
+            index=idx, msg=msg, channel=msg.channel,
+            score=item["score"], rec_id=rec.id, thread=thread,
+        ))
+        idx += 1
+
+    await session.commit()
+
+    # Send paginated digest
+    for page_items in split_digest_pages(digest_items):
+        text = format_digest_page(page_items)
+        await message.answer(
+            text, parse_mode="HTML", reply_markup=digest_keyboard(page_items),
+        )
 
     user.last_digest_at = datetime.utcnow()
     await session.commit()
