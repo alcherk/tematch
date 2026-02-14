@@ -77,6 +77,7 @@ class Message(Base):
     channel_id: Mapped[int] = mapped_column(ForeignKey("channels.id"))
     telegram_msg_id: Mapped[int] = mapped_column(nullable=False)
     text: Mapped[str] = mapped_column(Text, nullable=False)
+    text_html: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     reply_to_msg_id: Mapped[Optional[int]] = mapped_column(index=True)
     content_hash: Mapped[Optional[str]] = mapped_column(String(64), index=True)
     has_media: Mapped[bool] = mapped_column(Boolean, default=False)
