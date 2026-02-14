@@ -141,6 +141,25 @@ body::before {
 .cyber-table tbody tr:hover { background: var(--cyan-ghost); }
 .cyber-table tbody td { padding: 0.65rem 0; color: var(--text-secondary); }
 
+/* ─── Telegram HTML formatting ─────────────── */
+.cyber-table blockquote {
+  margin: 0.4em 0;
+  padding: 0.3em 0.75em;
+  border-left: 3px solid var(--neon-cyan);
+  background: rgba(0, 255, 255, 0.03);
+  font-style: italic;
+}
+.cyber-table pre, .cyber-table code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85em;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+}
+.cyber-table code { padding: 0.1em 0.3em; }
+.cyber-table pre { padding: 0.5em 0.75em; margin: 0.4em 0; overflow-x: auto; }
+.cyber-table a { color: var(--neon-cyan); text-decoration: underline; }
+.cyber-table strong { color: var(--text-primary); }
+
 /* ─── Progress bar ──────────────────────────── */
 .cyber-progress { height: 6px; background: var(--bg-deep); border: 1px solid var(--border-dim); overflow: hidden; }
 .cyber-progress-fill { height: 100%; transition: width 0.6s ease; }
