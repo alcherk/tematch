@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { apiFetch } from '../api';
+import { apiFetch, voteFeedback } from '../api';
 import CostChart from '../components/CostChart';
 import StatCard from '../components/StatCard';
 
@@ -8,17 +8,26 @@ export default function Admin() {
   const [costs, setCosts] = useState<any[]>([]);
   const [health, setHealth] = useState<any>(null);
   const [users, setUsers] = useState<any[]>([]);
+  const [recs, setRecs] = useState<any[]>([]);
   const [period, setPeriod] = useState('7d');
 
   useEffect(() => {
     apiFetch<any>('/api/admin/stats').then(setStats);
     apiFetch<any>('/api/admin/health').then(setHealth);
     apiFetch<any[]>('/api/admin/users').then(setUsers);
+    apiFetch<any[]>('/api/admin/recommendations').then(setRecs);
   }, []);
 
   useEffect(() => {
     apiFetch<any[]>(`/api/admin/costs?period=${period}`).then(setCosts);
   }, [period]);
+
+  const handleVote = async (recId: number, feedback: 'like' | 'dislike') => {
+    setRecs((prev) =>
+      prev.map((r) => (r.id === recId ? { ...r, feedback } : r))
+    );
+    await voteFeedback(recId, feedback);
+  };
 
   if (!stats) return (
     <p className="cyber-mono" style={{ color: 'var(--text-muted)' }}>Loading...</p>
@@ -133,8 +142,74 @@ export default function Admin() {
         </section>
       )}
 
-      {/* Users Table */}
+      {/* Recommendations */}
       <section className="cyber-card animate-in animate-in-5" style={{ padding: '1.75rem' }}>
+        <h3 className="cyber-heading" style={{ marginBottom: '1rem' }}>
+          <span style={{ color: 'var(--cyan)', marginRight: '0.5rem', opacity: 0.5 }}>▸</span>
+          Recommendations
+          <span className="cyber-mono" style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginLeft: '0.75rem' }}>
+            [{recs.length}]
+          </span>
+        </h3>
+        <table className="cyber-table">
+          <thead>
+            <tr>
+              <th>User</th>
+              <th>Channel</th>
+              <th>Text</th>
+              <th>Score</th>
+              <th>Vote</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            {recs.map((r: any) => (
+              <tr key={r.id}>
+                <td className="cyber-mono" style={{ color: 'var(--cyan)', fontSize: '0.75rem' }}>{r.user_telegram_id}</td>
+                <td style={{ fontSize: '0.8rem' }}>{r.channel_title}</td>
+                <td style={{ maxWidth: '250px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.8rem' }}>
+                  {r.text_preview}
+                </td>
+                <td className="cyber-mono" style={{ fontSize: '0.8rem' }}>{r.score.toFixed(2)}</td>
+                <td>
+                  <span className="flex gap-1">
+                    <button
+                      onClick={() => handleVote(r.id, 'like')}
+                      className="cyber-btn"
+                      style={{
+                        padding: '0.1rem 0.35rem',
+                        fontSize: '0.7rem',
+                        color: r.feedback === 'like' ? 'var(--neon-green)' : 'var(--text-muted)',
+                        borderColor: r.feedback === 'like' ? 'var(--neon-green)' : undefined,
+                      }}
+                    >
+                      👍
+                    </button>
+                    <button
+                      onClick={() => handleVote(r.id, 'dislike')}
+                      className="cyber-btn"
+                      style={{
+                        padding: '0.1rem 0.35rem',
+                        fontSize: '0.7rem',
+                        color: r.feedback === 'dislike' ? 'var(--neon-red)' : 'var(--text-muted)',
+                        borderColor: r.feedback === 'dislike' ? 'var(--neon-red)' : undefined,
+                      }}
+                    >
+                      👎
+                    </button>
+                  </span>
+                </td>
+                <td className="cyber-mono" style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                  {new Date(r.created_at).toLocaleString()}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
+
+      {/* Users Table */}
+      <section className="cyber-card animate-in animate-in-6" style={{ padding: '1.75rem' }}>
         <h3 className="cyber-heading" style={{ marginBottom: '1rem' }}>
           <span style={{ color: 'var(--cyan)', marginRight: '0.5rem', opacity: 0.5 }}>▸</span>
           Users
