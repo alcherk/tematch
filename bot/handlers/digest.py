@@ -10,6 +10,7 @@ from sqlalchemy.orm import selectinload
 
 from bot.formatters import fetch_thread_context, format_recommendation
 from bot.keyboards import feedback_keyboard
+from core.config import Settings
 from core.models import Message as MsgModel
 from core.models import Recommendation, User, UserChannel
 from core.recommender import Recommender, compute_window_start
@@ -32,7 +33,8 @@ async def count_digests_today(session: AsyncSession, user_id: int) -> int:
 
 @router.message(Command("digest"))
 async def cmd_digest(
-    message: TgMessage, session: AsyncSession, recommender: Recommender
+    message: TgMessage, session: AsyncSession, recommender: Recommender,
+    settings: Settings,
 ):
     stmt = select(User).where(User.telegram_id == message.from_user.id)
     user = (await session.execute(stmt)).scalar_one_or_none()
@@ -53,21 +55,25 @@ async def cmd_digest(
         )
         return
 
-    # Rate limit: per-user digest cap
-    digest_count = await count_digests_today(session, user.id)
-    if digest_count >= 3:
-        await message.answer(
-            f"Лимит дайджестов на сегодня: {digest_count}/3. Попробуй завтра."
-        )
-        return
+    is_admin = user.telegram_id == settings.ADMIN_TELEGRAM_ID
 
-    # Rate limit: global token budget
-    from core.llm_usage import get_daily_token_total
+    # Rate limit: per-user digest cap (skip for admin)
+    if not is_admin:
+        digest_count = await count_digests_today(session, user.id)
+        if digest_count >= 3:
+            await message.answer(
+                f"Лимит дайджестов на сегодня: {digest_count}/3. Попробуй завтра."
+            )
+            return
 
-    daily_tokens = await get_daily_token_total(session)
-    if daily_tokens >= 500_000:
-        await message.answer("Дневной лимит токенов исчерпан. Попробуй завтра.")
-        return
+    # Rate limit: global token budget (skip for admin)
+    if not is_admin:
+        from core.llm_usage import get_daily_token_total
+
+        daily_tokens = await get_daily_token_total(session)
+        if daily_tokens >= 500_000:
+            await message.answer("Дневной лимит токенов исчерпан. Попробуй завтра.")
+            return
 
     await message.answer("Подбираю рекомендации...")
 

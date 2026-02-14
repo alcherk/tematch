@@ -51,6 +51,7 @@ async def main():
             data["session"] = session
             data["recommender"] = recommender
             data["embedding_service"] = embedding_service
+            data["settings"] = app_settings
             return await handler(event, data)
 
     dp.include_router(start.router)
