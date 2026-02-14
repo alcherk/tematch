@@ -21,7 +21,8 @@ class Settings(BaseSettings):
     EMBEDDING_MODEL: str = "text-embedding-3-small"
     EMBEDDING_DIM: int = 1536
     CANDIDATES_LIMIT: int = 50
-    DIGEST_SIZE: int = 5
+    DIGEST_SIZE: int = 30
+    QUALITY_THRESHOLD: float = 0.5
 
     # Scheduler
     DEFAULT_DIGEST_CRON: str = "0 9 * * *"

@@ -39,14 +39,16 @@ class Recommender:
         embedding_service: EmbeddingService,
         llm_provider: LLMProvider,
         candidates_limit: int = 50,
-        digest_size: int = 5,
+        digest_size: int = 30,
         provider_name: str = "openai",
+        quality_threshold: float = 0.5,
     ):
         self.embedding_service = embedding_service
         self.llm_provider = llm_provider
         self.candidates_limit = candidates_limit
         self.digest_size = digest_size
         self.provider_name = provider_name
+        self.quality_threshold = quality_threshold
 
     async def recommend(
         self,
@@ -71,19 +73,27 @@ class Recommender:
                 tokens_out=0,
             )
 
-        stmt = (
-            select(Message)
-            .where(Message.channel_id.in_(channel_ids))
-            .where(Message.embedding.isnot(None))
-        )
-        if window_start:
-            stmt = stmt.where(Message.date >= window_start)
-        stmt = stmt.order_by(
-            Message.embedding.cosine_distance(query_vector)
-        ).limit(self.candidates_limit)
-        result = await session.execute(stmt)
-        candidates = result.scalars().all()
-        candidates = deduplicate_candidates(candidates)
+        # Stage 1: per-channel pgvector similarity search (diverse pool)
+        from math import ceil
+
+        per_channel_limit = ceil(self.candidates_limit / len(channel_ids))
+        all_candidates = []
+
+        for ch_id in channel_ids:
+            stmt = (
+                select(Message)
+                .where(Message.channel_id == ch_id)
+                .where(Message.embedding.isnot(None))
+            )
+            if window_start:
+                stmt = stmt.where(Message.date >= window_start)
+            stmt = stmt.order_by(
+                Message.embedding.cosine_distance(query_vector)
+            ).limit(per_channel_limit)
+            result = await session.execute(stmt)
+            all_candidates.extend(result.scalars().all())
+
+        candidates = deduplicate_candidates(all_candidates)
 
         if not candidates:
             return []
@@ -104,4 +114,5 @@ class Recommender:
             tokens_out=llm_result.tokens_out,
         )
 
-        return llm_result.ranked
+        # Stage 3: quality gate — drop low-score items
+        return [r for r in llm_result.ranked if r["score"] >= self.quality_threshold]

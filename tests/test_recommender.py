@@ -25,13 +25,15 @@ async def test_recommend_calls_embedding_then_llm(_mock_log):
         tokens_out=100,
     )
 
-    # Mock DB query result
-    mock_result = MagicMock()
+    # Mock DB query result (per-channel queries)
     mock_msg1 = MagicMock(id=1, text="ML news", channel_id=1, content_hash="h1", date=None)
     mock_msg2 = MagicMock(id=2, text="Crypto update", channel_id=1, content_hash="h2", date=None)
     mock_msg3 = MagicMock(id=3, text="Cat video", channel_id=2, content_hash="h3", date=None)
-    mock_result.scalars.return_value.all.return_value = [mock_msg1, mock_msg2, mock_msg3]
-    mock_session.execute.return_value = mock_result
+    result_ch1 = MagicMock()
+    result_ch1.scalars.return_value.all.return_value = [mock_msg1, mock_msg2]
+    result_ch2 = MagicMock()
+    result_ch2.scalars.return_value.all.return_value = [mock_msg3]
+    mock_session.execute.side_effect = [result_ch1, result_ch2]
 
     recommender = Recommender(
         embedding_service=mock_embedding,
@@ -51,9 +53,6 @@ async def test_recommend_calls_embedding_then_llm(_mock_log):
     mock_llm.rank_messages.assert_called_once()
     assert len(results) == 2
     assert results[0]["message_id"] == 1
-
-
-from math import ceil
 
 
 @pytest.mark.asyncio
@@ -93,7 +92,7 @@ async def test_recommend_diverse_pool_queries_each_channel(_mock_log):
         digest_size=30,
     )
 
-    results = await recommender.recommend(
+    await recommender.recommend(
         session=mock_session,
         user_id=1,
         interests="news",
