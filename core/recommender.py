@@ -114,5 +114,31 @@ class Recommender:
             tokens_out=llm_result.tokens_out,
         )
 
-        # Stage 3: quality gate — drop low-score items
-        return [r for r in llm_result.ranked if r["score"] >= self.quality_threshold]
+        # Stage 3: diversity guarantee + quality gate
+        # Build msg_id → channel_id map from candidates
+        id_to_channel: dict[int, int] = {m.id: m.channel_id for m in candidates}
+
+        # Guarantee best message per channel, then fill with quality-filtered
+        best_per_channel: dict[int, dict] = {}
+        quality_passed: list[dict] = []
+
+        for r in llm_result.ranked:
+            ch = id_to_channel.get(r["message_id"])
+            if ch is not None and ch not in best_per_channel:
+                best_per_channel[ch] = r
+            if r["score"] >= self.quality_threshold:
+                quality_passed.append(r)
+
+        # Merge: quality-passed + diversity picks (deduplicated, preserving order)
+        seen_ids: set[int] = set()
+        result: list[dict] = []
+        for r in quality_passed:
+            if r["message_id"] not in seen_ids:
+                seen_ids.add(r["message_id"])
+                result.append(r)
+        for r in best_per_channel.values():
+            if r["message_id"] not in seen_ids:
+                seen_ids.add(r["message_id"])
+                result.append(r)
+
+        return result

@@ -15,7 +15,7 @@ def test_settings_loads_defaults():
     assert settings.LLM_PROVIDER == "openai"
     assert settings.EMBEDDING_DIM == 1536
     assert settings.CANDIDATES_LIMIT == 50
-    assert settings.DIGEST_SIZE == 5
+    assert settings.DIGEST_SIZE == 30
     assert settings.DEFAULT_DIGEST_CRON == "0 9 * * *"
 
 

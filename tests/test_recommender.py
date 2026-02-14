@@ -186,3 +186,67 @@ async def test_recommend_per_channel_limit(_mock_log):
     )
 
     assert mock_session.execute.call_count == 3
+
+
+@pytest.mark.asyncio
+@patch("core.recommender.log_usage", new_callable=AsyncMock)
+async def test_recommend_diversity_guarantee_includes_each_channel(_mock_log):
+    """Best message from each channel should appear even if below quality threshold."""
+    mock_session = AsyncMock()
+    mock_embedding = AsyncMock()
+    mock_embedding.embed_text.return_value = EmbeddingResult(
+        embeddings=[[0.1] * 1536], tokens=10
+    )
+    mock_llm = AsyncMock()
+    # LLM ranks ch1 messages high, ch2 and ch3 messages low
+    mock_llm.rank_messages.return_value = LLMResult(
+        ranked=[
+            {"message_id": 1, "score": 0.95},
+            {"message_id": 2, "score": 0.85},
+            {"message_id": 3, "score": 0.30},  # ch2 best, below threshold
+            {"message_id": 5, "score": 0.20},  # ch3 best, below threshold
+            {"message_id": 4, "score": 0.10},  # ch2 second, below threshold
+        ],
+        tokens_in=500,
+        tokens_out=100,
+    )
+
+    msg1 = MagicMock(id=1, text="Ch1 A", channel_id=1, content_hash="h1", date=None)
+    msg2 = MagicMock(id=2, text="Ch1 B", channel_id=1, content_hash="h2", date=None)
+    msg3 = MagicMock(id=3, text="Ch2 A", channel_id=2, content_hash="h3", date=None)
+    msg4 = MagicMock(id=4, text="Ch2 B", channel_id=2, content_hash="h4", date=None)
+    msg5 = MagicMock(id=5, text="Ch3 A", channel_id=3, content_hash="h5", date=None)
+
+    result_ch1 = MagicMock()
+    result_ch1.scalars.return_value.all.return_value = [msg1, msg2]
+    result_ch2 = MagicMock()
+    result_ch2.scalars.return_value.all.return_value = [msg3, msg4]
+    result_ch3 = MagicMock()
+    result_ch3.scalars.return_value.all.return_value = [msg5]
+    mock_session.execute.side_effect = [result_ch1, result_ch2, result_ch3]
+
+    recommender = Recommender(
+        embedding_service=mock_embedding,
+        llm_provider=mock_llm,
+        candidates_limit=50,
+        digest_size=30,
+        quality_threshold=0.5,
+    )
+
+    results = await recommender.recommend(
+        session=mock_session,
+        user_id=1,
+        interests="news",
+        channel_ids=[1, 2, 3],
+    )
+
+    result_ids = {r["message_id"] for r in results}
+    # ch1 messages pass quality gate normally
+    assert 1 in result_ids
+    assert 2 in result_ids
+    # ch2 best (id=3) and ch3 best (id=5) included via diversity guarantee
+    assert 3 in result_ids
+    assert 5 in result_ids
+    # ch2 second (id=4, score=0.10) should NOT be included
+    assert 4 not in result_ids
+    assert len(results) == 4
