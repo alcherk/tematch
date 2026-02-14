@@ -19,6 +19,9 @@ def test_settings_loads_defaults():
     assert settings.DEFAULT_DIGEST_CRON == "0 9 * * *"
 
 
-def test_settings_requires_telegram_fields():
+def test_settings_requires_telegram_fields(monkeypatch):
+    monkeypatch.delenv("TG_API_ID", raising=False)
+    monkeypatch.delenv("TG_API_HASH", raising=False)
+    monkeypatch.delenv("TG_BOT_TOKEN", raising=False)
     with pytest.raises(ValidationError):
-        Settings(DATABASE_URL="postgresql+asyncpg://localhost/test")
+        Settings(DATABASE_URL="postgresql+asyncpg://localhost/test", _env_file=None)
