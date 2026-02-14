@@ -177,7 +177,7 @@ export default function Admin() {
                       onClick={() => handleVote(r.id, 'like')}
                       style={{
                         background: 'none', border: 'none', cursor: 'pointer', padding: '0 0.15rem',
-                        opacity: r.feedback === 'like' ? 1 : r.feedback ? 0.25 : 0.4,
+                        opacity: r.feedback === 'like' ? 1 : r.feedback ? 0.15 : 0.3,
                         filter: r.feedback === 'like' ? 'drop-shadow(0 0 4px var(--neon-green))' : 'none',
                         transition: 'opacity 0.15s, filter 0.15s',
                       }}
@@ -188,7 +188,7 @@ export default function Admin() {
                       onClick={() => handleVote(r.id, 'dislike')}
                       style={{
                         background: 'none', border: 'none', cursor: 'pointer', padding: '0 0.15rem',
-                        opacity: r.feedback === 'dislike' ? 1 : r.feedback ? 0.25 : 0.4,
+                        opacity: r.feedback === 'dislike' ? 1 : r.feedback ? 0.15 : 0.3,
                         filter: r.feedback === 'dislike' ? 'drop-shadow(0 0 4px var(--neon-red))' : 'none',
                         transition: 'opacity 0.15s, filter 0.15s',
                       }}

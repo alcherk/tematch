@@ -143,7 +143,7 @@ export default function Dashboard() {
                       onClick={() => handleVote(d.id, 'like')}
                       style={{
                         background: 'none', border: 'none', cursor: 'pointer', padding: '0 0.15rem',
-                        opacity: d.feedback === 'like' ? 1 : d.feedback ? 0.25 : 0.4,
+                        opacity: d.feedback === 'like' ? 1 : d.feedback ? 0.15 : 0.3,
                         filter: d.feedback === 'like' ? 'drop-shadow(0 0 4px var(--neon-green))' : 'none',
                         transition: 'opacity 0.15s, filter 0.15s',
                       }}
@@ -154,7 +154,7 @@ export default function Dashboard() {
                       onClick={() => handleVote(d.id, 'dislike')}
                       style={{
                         background: 'none', border: 'none', cursor: 'pointer', padding: '0 0.15rem',
-                        opacity: d.feedback === 'dislike' ? 1 : d.feedback ? 0.25 : 0.4,
+                        opacity: d.feedback === 'dislike' ? 1 : d.feedback ? 0.15 : 0.3,
                         filter: d.feedback === 'dislike' ? 'drop-shadow(0 0 4px var(--neon-red))' : 'none',
                         transition: 'opacity 0.15s, filter 0.15s',
                       }}
