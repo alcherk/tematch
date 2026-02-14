@@ -7,7 +7,6 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from telethon import TelegramClient
 
-from collector.channel_manager import get_active_channel_ids
 from collector.handlers import handle_new_message
 from core.models import Channel
 
@@ -35,15 +34,14 @@ async def resync_channels(
     batch_size: int = 100,
 ) -> None:
     async with session_factory() as session:
-        active_tg_ids = await get_active_channel_ids(session)
-        stmt = select(Channel).where(Channel.telegram_id.in_(active_tg_ids))
+        stmt = select(Channel).where(Channel.active.is_(True))
         channels = (await session.execute(stmt)).scalars().all()
 
     for channel in channels:
         offset_date = compute_resync_offset(channel.last_fetched_at, max_hours)
 
         # Resolve entity: use username if telegram_id is unknown
-        entity = channel.username if channel.telegram_id == 0 else channel.telegram_id
+        entity = channel.username if channel.telegram_id is None else channel.telegram_id
 
         logger.info(
             "Resync channel %s (entity=%s) from %s",
@@ -53,7 +51,7 @@ async def resync_channels(
         )
 
         # Resolve real telegram_id if unknown
-        if channel.telegram_id == 0 and channel.username:
+        if channel.telegram_id is None and channel.username:
             try:
                 tg_entity = await client.get_entity(channel.username)
                 async with session_factory() as session:
@@ -85,7 +83,7 @@ async def resync_channels(
             async with session_factory() as session:
                 await handle_new_message(
                     session=session,
-                    channel_telegram_id=entity if isinstance(entity, int) and entity != 0 else channel.telegram_id,
+                    channel_telegram_id=entity if isinstance(entity, int) else channel.telegram_id,
                     message_id=msg.id,
                     text=msg.text,
                     date=msg.date,

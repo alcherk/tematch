@@ -34,7 +34,7 @@ async def handle_channel_username(message: Message, session: AsyncSession):
 
     user = await _get_or_create_user(session, message.from_user.id)
     channel = await _get_or_create_channel(
-        session, telegram_id=0, username=username, title=username
+        session, telegram_id=None, username=username, title=username
     )
     await _link_user_channel(session, user.id, channel.id)
     await message.answer(
@@ -56,11 +56,11 @@ async def _get_or_create_user(session: AsyncSession, telegram_id: int) -> User:
 
 async def _get_or_create_channel(
     session: AsyncSession,
-    telegram_id: int,
+    telegram_id: Optional[int],
     username: Optional[str],
     title: Optional[str],
 ) -> Channel:
-    if telegram_id:
+    if telegram_id is not None:
         stmt = select(Channel).where(Channel.telegram_id == telegram_id)
     else:
         stmt = select(Channel).where(Channel.username == username)
